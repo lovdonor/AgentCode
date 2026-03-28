@@ -1,0 +1,29 @@
+name: encoding-convert
+version: "1.0"
+description: >
+  파일의 문자 인코딩을 감지하고 EUC-KR ↔ UTF-8 간 변환을 수행한다.
+  단일 파일 및 디렉토리 일괄 변환을 모두 지원한다.
+
+# 이 스킬이 참조하는 정책
+policies:
+  - coding-standards
+
+# 트리거 키워드 — 사용자 요청에 아래 키워드가 포함되면 이 스킬을 활성화한다
+triggers:
+  - "euc-kr"
+  - "euckr"
+  - "utf-8"
+  - "utf8"
+  - "인코딩 변환"
+  - "encoding convert"
+  - "인코딩 깨짐"
+  - "글자 깨짐"
+  - "한글 깨짐"
+  - "cp949"
+
+# 모델별 어댑터 설정
+# override 파일이 없으면 core skill.md 그대로 사용
+adapters:
+  claude: default
+  codex: default
+  gemini: default

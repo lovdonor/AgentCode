@@ -1,0 +1,25 @@
+# manifest.yaml 템플릿
+# 각 스킬 디렉토리(.ai/core/skills/<name>/)에 이 파일을 복사하여 사용한다.
+
+name: skill-name-here
+version: "1.0"
+description: >
+  이 스킬이 하는 일과 트리거 조건을 기술한다.
+
+# 이 스킬이 참조하는 정책 목록 (.ai/core/policies/ 내 파일명, 확장자 제외)
+policies: []
+  # - coding-standards
+  # - safety-rules
+
+# 트리거 키워드 (사용자 요청에 이 키워드가 포함되면 스킬 활성화)
+triggers: []
+  # - "빌드 실패"
+  # - "build error"
+
+# 모델별 오버라이드 여부
+# default: core/skills/<name>/skill.md 그대로 사용
+# override: adapters/<model>/overrides/<name>.md 사용 (본문 보충)
+adapters:
+  claude: default
+  codex: default
+  gemini: default
