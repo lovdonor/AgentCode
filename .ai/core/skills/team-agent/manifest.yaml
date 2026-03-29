@@ -1,0 +1,21 @@
+name: team-agent
+version: "1.0"
+description: >
+  tmux 환경에서 리더·개발자·코드점검자·테스터·문서관리자로 구성된
+  5인 멀티 에이전트 팀을 구성하고, 파일 기반 메시지 버스를 통해
+  역할 간 직접 커뮤니케이션하며 개발 워크플로우를 진행한다.
+
+triggers:
+  - "팀에이전트"
+  - "team-agent"
+  - "팀 개발"
+  - "멀티에이전트"
+  - "multi-agent"
+  - "팀 협업"
+  - "team collaboration"
+  - "리더 개발자 리뷰어"
+
+adapters:
+  claude: override   # adapters/claude/overrides/team-agent.md 적용
+  codex: override    # adapters/codex/overrides/team-agent.md 적용
+  gemini: override   # adapters/gemini/overrides/team-agent.md 적용

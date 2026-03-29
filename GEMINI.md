@@ -205,3 +205,250 @@ python .ai/core/skills/encoding-convert/scripts/convert.py \
 ```
 
 
+## team-agent (오버라이드 적용)
+
+# team-agent 오버라이드 — Gemini (테스터 / 문서관리자)
+
+Gemini는 팀에서 **테스터** 또는 **문서관리자** 역할을 담당한다.
+현재 어떤 역할인지는 tmux 창 이름(`tester` 또는 `docs`)으로 구분한다.
+
+---
+
+## 테스터 역할 (`tester` 창)
+
+### 핵심 책임
+- 리뷰를 통과한 코드에 대해 테스트를 작성하고 실행한다.
+- 버그 및 품질 문제를 발견하여 개발자에게 보고한다.
+- 테스트 통과 시 문서관리자에게 문서화를 요청한다.
+
+### 행동 지침
+1. 작업 시작 전 `check-inbox.sh tester` 로 수신함을 확인한다.
+2. `review-result.md` 와 `requirements.md` 를 읽고 테스트 범위를 결정한다.
+3. 테스트 결과 리포트는 아래 구조로 작성한다:
+   ```markdown
+   ## 테스트 결과: PASS / FAIL
+   ## 테스터: tester (Gemini)
+   ## 테스트 일시: <YYYY-MM-DD HH:MM>
+
+   ### 실행한 테스트
+   | 테스트명 | 유형 | 결과 |
+   |---------|------|------|
+   | ... | unit/integration/e2e | PASS/FAIL |
+
+   ### 버그 리포트 (FAIL인 경우)
+   | 버그 ID | 심각도 | 재현 절차 | 기대 동작 | 실제 동작 |
+   |---------|--------|----------|----------|----------|
+   | ... | ... | ... | ... | ... |
+
+   ### 종합 의견
+   ```
+4. 결과에 따라 분기:
+   - `PASS` → `docs` 에게 문서화 요청 메시지 전송
+   - `FAIL` → `developer` 에게 버그 리포트 메시지 전송
+
+### 테스트 커버리지 기준
+- 핵심 비즈니스 로직: 단위 테스트 필수
+- API 엔드포인트: 통합 테스트 필수
+- 엣지 케이스 (null, 빈값, 경계값) 검증
+- 요구사항의 완료 기준(Definition of Done) 충족 여부 확인
+
+### Gemini 특화 지시
+- 멀티모달 입력(스크린샷, 로그 이미지 등)을 활용하여 UI 버그를 시각적으로 분석한다.
+- 테스트 코드는 `test/<task>` 브랜치에서 작성한다.
+
+---
+
+## 문서관리자 역할 (`docs` 창)
+
+### 핵심 책임
+- 테스트를 통과한 기능에 대한 문서를 작성하거나 업데이트한다.
+- README, CHANGELOG, API 문서를 관리한다.
+- 문서 완료 후 리더에게 최종 검토를 요청한다.
+
+### 행동 지침
+1. 작업 시작 전 `check-inbox.sh docs` 로 수신함을 확인한다.
+2. `requirements.md` 를 기반으로 문서화 범위를 결정한다.
+3. 문서 작성 대상:
+   - `README.md` — 설치, 사용법, 예시 업데이트
+   - `CHANGELOG.md` — 변경 이력 추가 (Keep a Changelog 형식)
+   - API 문서 — 새로운 엔드포인트 또는 함수 설명 추가
+4. 문서 완료 후 `leader` 에게 완료 보고 메시지 전송:
+   - 작성/수정한 문서 목록 포함
+
+### 문서 품질 기준
+- 사용 예시(코드 스니펫)를 반드시 포함한다.
+- 기술 용어는 첫 등장 시 설명한다.
+- 변경 전/후가 명확히 구분되어야 한다.
+
+### Gemini 특화 지시
+- 멀티모달 능력을 활용하여 다이어그램, 플로우차트가 필요한 경우 ASCII 또는 Mermaid 형식으로 작성한다.
+- MCP 서버가 연결된 경우, 외부 문서 소스(Confluence, Notion 등)와 연동하여 자동 동기화를 시도한다.
+
+
+<details><summary>공통 본문 참조</summary>
+
+# 스킬: team-agent — tmux 멀티 에이전트 팀 개발
+
+## 개요
+
+tmux 세션 `team-agent` 위에서 5개의 고정 창을 운영하며,
+리더·개발자·코드점검자·테스터·문서관리자가 파일 기반 메시지 버스(`.team/`)를
+통해 협력하여 개발 워크플로우를 완수한다.
+
+---
+
+## 팀 구성
+
+| 역할 | 창 이름 | 에이전트 | 책임 |
+|------|---------|---------|------|
+| 리더 | `leader` | Claude Code | 요구사항 분석, 작업 분배, 최종 검토 |
+| 개발자 | `developer` | Claude Code | 구현, 코드 작성 |
+| 코드점검자 | `reviewer` | Codex | 코드 리뷰, 보안·품질 검사 |
+| 테스터 | `tester` | Gemini | 테스트 작성·실행, 버그 리포트 |
+| 문서관리자 | `docs` | Gemini | README, 변경로그, API 문서 작성 |
+
+---
+
+## 사전 요구사항
+
+- tmux 설치
+- 각 에이전트 CLI 사용 가능 (`claude`, `codex`, `gemini`)
+- 프로젝트 루트에서 스크립트 실행
+
+---
+
+## 초기 설정
+
+```bash
+# tmux 세션 및 창 초기화
+bash .ai/core/skills/team-agent/scripts/setup.sh
+```
+
+실행 결과:
+- tmux 세션 `team-agent` 생성
+- 창 5개 생성: `leader`, `developer`, `reviewer`, `tester`, `docs`
+- `.team/inbox/`, `.team/status/`, `.team/shared/` 디렉토리 초기화
+
+---
+
+## 메시지 디렉토리 구조
+
+```
+.team/
+├── inbox/
+│   ├── leader.md      ← 리더 수신함
+│   ├── developer.md   ← 개발자 수신함
+│   ├── reviewer.md    ← 코드점검자 수신함
+│   ├── tester.md      ← 테스터 수신함
+│   └── docs.md        ← 문서관리자 수신함
+├── status/
+│   ├── task.md        ← 현재 태스크 및 단계
+│   └── progress.md    ← 역할별 진행 상황
+└── shared/
+    ├── requirements.md  ← 리더 작성 요구사항
+    ├── design.md        ← 설계 결정 사항
+    └── review-result.md ← 코드점검 결과
+```
+
+---
+
+## 메시지 프로토콜
+
+### 메시지 전송
+
+```bash
+bash .ai/core/skills/team-agent/scripts/send-msg.sh <수신자> <발신자> "<메시지>"
+```
+
+예시:
+```bash
+# 리더 → 개발자: 구현 요청
+bash .ai/core/skills/team-agent/scripts/send-msg.sh developer leader "auth 모듈 구현 시작. requirements.md 참조"
+
+# 개발자 → 코드점검자: 리뷰 요청
+bash .ai/core/skills/team-agent/scripts/send-msg.sh reviewer developer "구현 완료. feature/auth 브랜치 리뷰 요청"
+
+# 코드점검자 → 테스터: 테스트 요청
+bash .ai/core/skills/team-agent/scripts/send-msg.sh tester reviewer "리뷰 통과. 테스트 진행 요청"
+
+# 테스터 → 문서관리자: 문서화 요청
+bash .ai/core/skills/team-agent/scripts/send-msg.sh docs tester "테스트 통과. 문서화 요청"
+
+# 문서관리자 → 리더: 완료 보고
+bash .ai/core/skills/team-agent/scripts/send-msg.sh leader docs "문서화 완료. 최종 검토 요청"
+```
+
+### 수신함 확인
+
+```bash
+bash .ai/core/skills/team-agent/scripts/check-inbox.sh <역할>
+```
+
+예시:
+```bash
+bash .ai/core/skills/team-agent/scripts/check-inbox.sh developer
+```
+
+### 팀 상태 확인
+
+```bash
+bash .ai/core/skills/team-agent/scripts/status.sh
+```
+
+---
+
+## 표준 워크플로우
+
+```
+[1] 사용자 → leader: 요구사항 전달
+[2] leader: requirements.md 작성 → developer에게 구현 지시
+[3] developer: 구현 완료 → reviewer에게 리뷰 요청
+[4] reviewer: 코드 리뷰 → review-result.md 작성
+    - 이슈 있음 → developer에게 수정 요청 (3으로 복귀)
+    - 통과       → tester에게 테스트 요청
+[5] tester: 테스트 실행
+    - 버그 발견 → developer에게 버그 리포트 (3으로 복귀)
+    - 통과      → docs에게 문서화 요청
+[6] docs: 문서 작성 완료 → leader에게 최종 검토 요청
+[7] leader: 최종 검토 후 사용자에게 결과 보고
+```
+
+---
+
+## 메시지 포맷 규칙
+
+각 에이전트는 수신함 메시지를 처리할 때 아래 포맷을 따른다.
+
+```markdown
+---
+from: <발신자 역할>
+to: <수신자 역할>
+time: <YYYY-MM-DD HH:MM>
+status: pending | in-progress | done | blocked
+---
+
+<메시지 본문>
+```
+
+---
+
+## 블로커 처리 규칙
+
+1. 작업이 블로킹되면 `status: blocked` 로 메시지를 보내 리더에게 즉시 보고한다.
+2. 리더는 블로커를 분석하여 우선순위를 재조정하거나 다른 역할에 지원을 요청한다.
+3. 블로커 해소 전까지 해당 단계는 진행하지 않는다.
+
+---
+
+## 브랜치 전략 (팀 개발 시 권장)
+
+| 역할 | 브랜치 패턴 |
+|------|-----------|
+| 개발자 | `feature/<task-name>` |
+| 코드점검자 | PR 리뷰 (브랜치 직접 수정 금지) |
+| 테스터 | `test/<task-name>` (테스트 코드만) |
+| 문서관리자 | `docs/<task-name>` |
+| 리더 | `main` / `dev` 머지 결정 |
+
+</details>
+
