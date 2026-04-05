@@ -82,13 +82,11 @@
 - **encoding-convert**
   경로: `.ai/core/skills/encoding-convert/skill.md`
   설명: 파일의 문자 인코딩을 감지하고 EUC-KR 또는 UTF-8 간 변환을 수행한다. 단일 파일과 디렉터리 일괄 변환을 모두 지원한다.
-파일의 문자 인코딩을 감지하고 EUC-KR 또는 UTF-8 간 변환을 수행한다. 단일 파일과 디렉터리 일괄 변환을 모두 지원한다.
   대표 트리거: `euc-kr`, `euckr`, `utf-8`, ...
   선행조건: `Python 3.6+`, `chardet 라이브러리`
 - **team-agent**
   경로: `.ai/adapters/claude/overrides/team-agent.md` (오버라이드 적용)
   설명: tmux 환경에서 리더, 개발자, 리뷰어, 테스터, 문서 담당으로 역할을 분리한 멀티 에이전트 협업 워크플로우를 구성하고 파일 기반 메시지 박스로 조율한다.
-tmux 환경에서 리더, 개발자, 리뷰어, 테스터, 문서 담당으로 역할을 분리한 멀티 에이전트 협업 워크플로우를 구성하고 파일 기반 메시지 박스로 조율한다.
   대표 트리거: `멀티 에이전트`, `team-agent`, `팀 개발`, ...
   선행조건: `tmux 설치`, `claude, codex, gemini CLI 사용 가능`, `프로젝트 루트에서 스크립트 실행`
 

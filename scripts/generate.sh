@@ -37,6 +37,7 @@ yaml_block_value() {
     BEGIN {
       in_block = 0
       value = ""
+      emitted = 0
     }
 
     $0 ~ "^" key ":[[:space:]]*[>|][[:space:]]*$" {
@@ -46,6 +47,7 @@ yaml_block_value() {
 
     $0 ~ "^" key ":[[:space:]]*[^>|][^#]*$" {
       sub("^" key ":[[:space:]]*", "", $0)
+      emitted = 1
       print $0
       exit
     }
@@ -65,12 +67,13 @@ yaml_block_value() {
     }
 
     in_block {
+      emitted = 1
       print value
       exit
     }
 
     END {
-      if (in_block) {
+      if (in_block && !emitted) {
         print value
       }
     }
@@ -99,7 +102,9 @@ yaml_list_values() {
       item = $0
       sub(/^  - /, "", item)
       sub(/[[:space:]]+#.*$/, "", item)
-      gsub(/^["'\'']|["'\'']$/, "", item)
+      if (item ~ /^".*"$/) {
+        item = substr(item, 2, length(item) - 2)
+      }
       print item
       next
     }
@@ -171,7 +176,7 @@ render_skill_entry() {
   fi
 
   local description
-  description=$(trim "$(yaml_block_value "$manifest" "description")")
+  description=$(trim "$(yaml_block_value "$manifest" "description" | awk "NR == 1 { print; exit }")")
 
   local -a triggers=()
   local -a prerequisites=()
