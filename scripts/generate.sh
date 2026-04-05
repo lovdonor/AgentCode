@@ -44,77 +44,53 @@ assemble() {
     echo -e "\n---\n" >> "$tmp"
   fi
 
-  # 3) 스킬 본문 (오버라이드 우선)
+  # 3) 스킬 참조 링크 목록 생성
+  echo "## 스킬 참조" >> "$tmp"
+  echo "" >> "$tmp"
+  echo "작업 유형에 맞는 스킬이 있으면 아래 경로를 참조한다:" >> "$tmp"
+  echo "" >> "$tmp"
+
   if [[ -d "$AI_DIR/core/skills" ]]; then
-    local has_skills=false
     for skill_dir in "$AI_DIR/core/skills"/*/; do
       [[ -d "$skill_dir" ]] || continue
       local skill_name
       skill_name=$(basename "$skill_dir")
-      local override="$AI_DIR/adapters/$model/overrides/${skill_name}.md"
-      local core_skill="$skill_dir/skill.md"
-
-      if [[ -f "$override" ]]; then
-        if [[ "$has_skills" == false ]]; then
-          echo "# 스킬 상세" >> "$tmp"
-          echo "" >> "$tmp"
-          has_skills=true
-        fi
-        echo "## $skill_name (오버라이드 적용)" >> "$tmp"
-        echo "" >> "$tmp"
-        cat "$override" >> "$tmp"
-        echo -e "\n" >> "$tmp"
-        # 본문도 포함 (오버라이드는 보충이므로)
-        if [[ -f "$core_skill" ]]; then
-          echo "<details><summary>공통 본문 참조</summary>" >> "$tmp"
-          echo "" >> "$tmp"
-          cat "$core_skill" >> "$tmp"
-          echo -e "\n</details>\n" >> "$tmp"
-        fi
-      elif [[ -f "$core_skill" ]]; then
-        if [[ "$has_skills" == false ]]; then
-          echo "# 스킬 상세" >> "$tmp"
-          echo "" >> "$tmp"
-          has_skills=true
-        fi
-        echo "## $skill_name" >> "$tmp"
-        echo "" >> "$tmp"
-        cat "$core_skill" >> "$tmp"
-        echo -e "\n" >> "$tmp"
+      if [[ -f "$AI_DIR/adapters/$model/overrides/${skill_name}.md" ]]; then
+        echo "- **$skill_name** — \`.ai/adapters/$model/overrides/${skill_name}.md\` (오버라이드 적용)" >> "$tmp"
+      elif [[ -f "$skill_dir/skill.md" ]]; then
+        echo "- **$skill_name** — \`.ai/core/skills/$skill_name/skill.md\`" >> "$tmp"
       fi
     done
   fi
 
-  # 4) 프로젝트별 로컬 오버레이 (.ai-local/)
   local ai_local="$REPO_ROOT/.ai-local"
-  if [[ -d "$ai_local" ]]; then
-    echo "---" >> "$tmp"
-    echo "" >> "$tmp"
-    echo "# 프로젝트 전용 규칙" >> "$tmp"
-    echo "" >> "$tmp"
+  if [[ -d "$ai_local/skills" ]]; then
+    for skill_dir in "$ai_local/skills"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      local skill_name
+      skill_name=$(basename "$skill_dir")
+      if [[ -f "$skill_dir/skill.md" ]]; then
+        echo "- **$skill_name** — \`.ai-local/skills/$skill_name/skill.md\`" >> "$tmp"
+      fi
+    done
+  fi
+  echo "" >> "$tmp"
 
-    # 로컬 정책
+  # 4) 프로젝트별 로컬 오버레이 (.ai-local/policies/)
+  if [[ -d "$ai_local" ]]; then
     if [[ -d "$ai_local/policies" ]]; then
+      local has_policies=false
       for policy in "$ai_local/policies"/*.md; do
         [[ -f "$policy" ]] || continue
+        if [[ "$has_policies" == false ]]; then
+          echo "---" >> "$tmp"
+          echo "" >> "$tmp"
+          echo "# 프로젝트 전용 규칙" >> "$tmp"
+          echo "" >> "$tmp"
+          has_policies=true
+        fi
         cat "$policy" >> "$tmp"
         echo -e "\n" >> "$tmp"
-      done
-    fi
-
-    # 로컬 스킬
-    if [[ -d "$ai_local/skills" ]]; then
-      for skill_dir in "$ai_local/skills"/*/; do
-        [[ -d "$skill_dir" ]] || continue
-        local skill_name
-        skill_name=$(basename "$skill_dir")
-        local local_skill="$skill_dir/skill.md"
-        if [[ -f "$local_skill" ]]; then
-          echo "## $skill_name (프로젝트 전용)" >> "$tmp"
-          echo "" >> "$tmp"
-          cat "$local_skill" >> "$tmp"
-          echo -e "\n" >> "$tmp"
-        fi
       done
     fi
   fi
