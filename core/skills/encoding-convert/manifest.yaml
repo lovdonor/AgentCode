@@ -1,14 +1,18 @@
 name: encoding-convert
 version: "1.0"
 description: >
-  파일의 문자 인코딩을 감지하고 EUC-KR ↔ UTF-8 간 변환을 수행한다.
-  단일 파일 및 디렉토리 일괄 변환을 모두 지원한다.
+  파일의 문자 인코딩을 감지하고 EUC-KR 또는 UTF-8 간 변환을 수행한다.
+  단일 파일과 디렉터리 일괄 변환을 모두 지원한다.
+
+prerequisites:
+  - "Python 3.6+"
+  - "chardet 라이브러리"
 
 # 이 스킬이 참조하는 정책
 policies:
   - coding-standards
 
-# 트리거 키워드 — 사용자 요청에 아래 키워드가 포함되면 이 스킬을 활성화한다
+# 트리거 키워드: 사용자 요청에 아래 키워드가 포함되면 이 스킬을 우선 검토한다.
 triggers:
   - "euc-kr"
   - "euckr"

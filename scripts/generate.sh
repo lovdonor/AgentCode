@@ -1,14 +1,14 @@
 #!/bin/bash
 # .ai/scripts/generate.sh
-# 공통 base + 모델별 adapter + 스킬(오버라이드 우선) 을 조합하여
+# 공통 base + 모델별 adapter + 스킬(오버라이드 우선) 내용을 조합하여
 # 루트의 CLAUDE.md / AGENTS.md / GEMINI.md 를 생성한다.
 #
-# 사용법:
-#   .ai/scripts/generate.sh              # 전체 생성
-#   .ai/scripts/generate.sh claude       # Claude만 생성
+# 사용법
+#   .ai/scripts/generate.sh         # 전체 생성
+#   .ai/scripts/generate.sh codex   # 특정 모델만 생성
 #
 # 프로젝트별 오버레이:
-#   .ai-local/ 디렉토리가 있으면 해당 내용을 추가로 머지한다.
+#   .ai-local/ 디렉터리가 있으면 해당 내용도 함께 병합한다.
 
 set -euo pipefail
 
@@ -16,96 +16,291 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$AI_DIR/.." && pwd)"
 
-# ── 모델 → 출력 파일 매핑 ──
 declare -A MODEL_OUTPUT=(
   [claude]="CLAUDE.md"
   [codex]="AGENTS.md"
   [gemini]="GEMINI.md"
 )
 
+trim() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
+yaml_block_value() {
+  local file=$1
+  local key=$2
+
+  awk -v key="$key" '
+    BEGIN {
+      in_block = 0
+      value = ""
+    }
+
+    $0 ~ "^" key ":[[:space:]]*[>|][[:space:]]*$" {
+      in_block = 1
+      next
+    }
+
+    $0 ~ "^" key ":[[:space:]]*[^>|][^#]*$" {
+      sub("^" key ":[[:space:]]*", "", $0)
+      print $0
+      exit
+    }
+
+    in_block && $0 ~ /^  / {
+      sub(/^  /, "", $0)
+      if (value == "") {
+        value = $0
+      } else {
+        value = value " " $0
+      }
+      next
+    }
+
+    in_block && $0 ~ /^[[:space:]]*$/ {
+      next
+    }
+
+    in_block {
+      print value
+      exit
+    }
+
+    END {
+      if (in_block) {
+        print value
+      }
+    }
+  ' "$file"
+}
+
+yaml_list_values() {
+  local file=$1
+  local key=$2
+
+  awk -v key="$key" '
+    BEGIN {
+      in_list = 0
+    }
+
+    $0 ~ "^" key ":[[:space:]]*$" {
+      in_list = 1
+      next
+    }
+
+    in_list && $0 ~ /^[[:space:]]*#/ {
+      next
+    }
+
+    in_list && $0 ~ /^  - / {
+      item = $0
+      sub(/^  - /, "", item)
+      sub(/[[:space:]]+#.*$/, "", item)
+      gsub(/^["'\'']|["'\'']$/, "", item)
+      print item
+      next
+    }
+
+    in_list && $0 ~ /^[[:space:]]*$/ {
+      next
+    }
+
+    in_list {
+      exit
+    }
+  ' "$file"
+}
+
+format_list() {
+  local max=$1
+  shift
+
+  local items=("$@")
+  local total=${#items[@]}
+  local limit=$total
+
+  if (( total == 0 )); then
+    printf '%s' "없음"
+    return
+  fi
+
+  if (( max > 0 && total > max )); then
+    limit=$max
+  fi
+
+  local rendered=""
+  local index
+  for (( index = 0; index < limit; index++ )); do
+    local item
+    item=$(trim "${items[$index]}")
+    [[ -n "$item" ]] || continue
+
+    if [[ -z "$rendered" ]]; then
+      rendered="\`$item\`"
+    else
+      rendered="$rendered, \`$item\`"
+    fi
+  done
+
+  if [[ -z "$rendered" ]]; then
+    rendered="없음"
+  elif (( max > 0 && total > max )); then
+    rendered="$rendered, ..."
+  fi
+
+  printf '%s' "$rendered"
+}
+
+render_skill_entry() {
+  local name=$1
+  local manifest=$2
+  local skill_path=$3
+  local note=${4:-}
+
+  echo "- **$name**"
+  echo "  경로: \`$skill_path\`$note"
+
+  if [[ ! -f "$manifest" ]]; then
+    echo "  설명: manifest.yaml 없음"
+    echo "  대표 트리거: 없음"
+    echo "  선행조건: 없음"
+    return
+  fi
+
+  local description
+  description=$(trim "$(yaml_block_value "$manifest" "description")")
+
+  local -a triggers=()
+  local -a prerequisites=()
+
+  mapfile -t triggers < <(yaml_list_values "$manifest" "triggers")
+  mapfile -t prerequisites < <(yaml_list_values "$manifest" "prerequisites")
+
+  if [[ -z "$description" ]]; then
+    description="설명 없음"
+  fi
+
+  echo "  설명: $description"
+  echo "  대표 트리거: $(format_list 3 "${triggers[@]}")"
+  echo "  선행조건: $(format_list 0 "${prerequisites[@]}")"
+}
+
+render_shared_skills() {
+  local model=$1
+  local found=false
+
+  if [[ -d "$AI_DIR/core/skills" ]]; then
+    local skill_dir
+    for skill_dir in "$AI_DIR/core/skills"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      found=true
+
+      local skill_name
+      skill_name=$(basename "$skill_dir")
+
+      local manifest="$skill_dir/manifest.yaml"
+      local skill_path=".ai/core/skills/$skill_name/skill.md"
+      local note=""
+
+      if [[ -f "$AI_DIR/adapters/$model/overrides/${skill_name}.md" ]]; then
+        skill_path=".ai/adapters/$model/overrides/${skill_name}.md"
+        note=" (오버라이드 적용)"
+      fi
+
+      render_skill_entry "$skill_name" "$manifest" "$skill_path" "$note"
+    done
+  fi
+
+  if [[ "$found" == false ]]; then
+    echo "- 없음"
+  fi
+}
+
+render_local_skills() {
+  local ai_local=$1
+  local found=false
+
+  if [[ -d "$ai_local/skills" ]]; then
+    local skill_dir
+    for skill_dir in "$ai_local/skills"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      found=true
+
+      local skill_name
+      skill_name=$(basename "$skill_dir")
+
+      render_skill_entry \
+        "$skill_name" \
+        "$skill_dir/manifest.yaml" \
+        ".ai-local/skills/$skill_name/skill.md"
+    done
+  fi
+
+  if [[ "$found" == false ]]; then
+    echo "- 없음"
+  fi
+}
+
 assemble() {
   local model=$1
   local output_file="${REPO_ROOT}/${MODEL_OUTPUT[$model]}"
+  local ai_local="$REPO_ROOT/.ai-local"
   local tmp
   tmp=$(mktemp)
 
-  # 헤더
   echo "<!-- AUTO-GENERATED by .ai/scripts/generate.sh — DO NOT EDIT DIRECTLY -->" > "$tmp"
   echo "" >> "$tmp"
 
-  # 1) 공통 base
   cat "$AI_DIR/adapters/_base.md" >> "$tmp"
   echo -e "\n---\n" >> "$tmp"
 
-  # 2) 모델별 preamble
   local preamble="$AI_DIR/adapters/$model/preamble.md"
   if [[ -f "$preamble" ]]; then
     cat "$preamble" >> "$tmp"
     echo -e "\n---\n" >> "$tmp"
   fi
 
-  # 3) 스킬 참조 링크 목록 생성
   echo "## 스킬 참조" >> "$tmp"
   echo "" >> "$tmp"
-  echo "작업 유형에 맞는 스킬이 있으면 아래 경로를 참조한다:" >> "$tmp"
+  echo "스킬은 아래 순서로 참조한다. 프로젝트 로컬 \`.ai-local/skills\` 가 동일 주제의 공유 \`.ai/core/skills\` 보다 우선하며, 로컬 정의가 없으면 공유 스킬을 사용한다." >> "$tmp"
+  echo "" >> "$tmp"
+  echo "### 공유 스킬 (.ai)" >> "$tmp"
+  render_shared_skills "$model" >> "$tmp"
+  echo "" >> "$tmp"
+  echo "### 프로젝트 로컬 스킬 (.ai-local)" >> "$tmp"
+  render_local_skills "$ai_local" >> "$tmp"
   echo "" >> "$tmp"
 
-  if [[ -d "$AI_DIR/core/skills" ]]; then
-    for skill_dir in "$AI_DIR/core/skills"/*/; do
-      [[ -d "$skill_dir" ]] || continue
-      local skill_name
-      skill_name=$(basename "$skill_dir")
-      if [[ -f "$AI_DIR/adapters/$model/overrides/${skill_name}.md" ]]; then
-        echo "- **$skill_name** — \`.ai/adapters/$model/overrides/${skill_name}.md\` (오버라이드 적용)" >> "$tmp"
-      elif [[ -f "$skill_dir/skill.md" ]]; then
-        echo "- **$skill_name** — \`.ai/core/skills/$skill_name/skill.md\`" >> "$tmp"
+  if [[ -d "$ai_local/policies" ]]; then
+    local has_policies=false
+    local policy
+    for policy in "$ai_local/policies"/*.md; do
+      [[ -f "$policy" ]] || continue
+      if [[ "$has_policies" == false ]]; then
+        echo "---" >> "$tmp"
+        echo "" >> "$tmp"
+        echo "# 프로젝트 전용 규칙" >> "$tmp"
+        echo "" >> "$tmp"
+        has_policies=true
       fi
+      cat "$policy" >> "$tmp"
+      echo -e "\n" >> "$tmp"
     done
-  fi
-
-  local ai_local="$REPO_ROOT/.ai-local"
-  if [[ -d "$ai_local/skills" ]]; then
-    for skill_dir in "$ai_local/skills"/*/; do
-      [[ -d "$skill_dir" ]] || continue
-      local skill_name
-      skill_name=$(basename "$skill_dir")
-      if [[ -f "$skill_dir/skill.md" ]]; then
-        echo "- **$skill_name** — \`.ai-local/skills/$skill_name/skill.md\`" >> "$tmp"
-      fi
-    done
-  fi
-  echo "" >> "$tmp"
-
-  # 4) 프로젝트별 로컬 오버레이 (.ai-local/policies/)
-  if [[ -d "$ai_local" ]]; then
-    if [[ -d "$ai_local/policies" ]]; then
-      local has_policies=false
-      for policy in "$ai_local/policies"/*.md; do
-        [[ -f "$policy" ]] || continue
-        if [[ "$has_policies" == false ]]; then
-          echo "---" >> "$tmp"
-          echo "" >> "$tmp"
-          echo "# 프로젝트 전용 규칙" >> "$tmp"
-          echo "" >> "$tmp"
-          has_policies=true
-        fi
-        cat "$policy" >> "$tmp"
-        echo -e "\n" >> "$tmp"
-      done
-    fi
   fi
 
   mv "$tmp" "$output_file"
-  echo "✓ ${MODEL_OUTPUT[$model]} 생성 완료"
+  echo "생성 완료: ${MODEL_OUTPUT[$model]}"
 }
 
-# ── 메인 ──
 if [[ $# -gt 0 ]]; then
   for model in "$@"; do
     if [[ -v "MODEL_OUTPUT[$model]" ]]; then
       assemble "$model"
     else
-      echo "✗ 알 수 없는 모델: $model (claude|codex|gemini)" >&2
+      echo "지원하지 않는 모델: $model (claude|codex|gemini)" >&2
       exit 1
     fi
   done

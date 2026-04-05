@@ -16,6 +16,12 @@
 - 에이전트는 로드된 환경의 **스킬(Skills)** 및 **정책(Policies)**을 우선적으로 숙지하고 따릅니다.
 - `manifest.yaml`에 정의된 의존성 구조를 확인합니다.
 
+## 참조 우선순위
+
+- 공통 기본값은 `.ai/` 아래의 정책과 스킬을 기준으로 해석합니다.
+- 프로젝트별 예외, 보강 규칙, 로컬 스킬은 `.ai-local/`에서 추가로 로드합니다.
+- 동일한 주제에서 `.ai/`와 `.ai-local/`의 지시가 충돌하면 `.ai-local/`을 우선하고, `.ai-local/`에 정의가 없으면 `.ai/` 기본값을 따릅니다.
+
 ---
 
 # Claude 어댑터
@@ -70,8 +76,22 @@
 
 ## 스킬 참조
 
-작업 유형에 맞는 스킬이 있으면 아래 경로를 참조한다:
+스킬은 아래 순서로 참조한다. 프로젝트 로컬 `.ai-local/skills` 가 동일 주제의 공유 `.ai/core/skills` 보다 우선하며, 로컬 정의가 없으면 공유 스킬을 사용한다.
 
-- **encoding-convert** — `.ai/core/skills/encoding-convert/skill.md`
-- **team-agent** — `.ai/adapters/claude/overrides/team-agent.md` (오버라이드 적용)
+### 공유 스킬 (.ai)
+- **encoding-convert**
+  경로: `.ai/core/skills/encoding-convert/skill.md`
+  설명: 파일의 문자 인코딩을 감지하고 EUC-KR 또는 UTF-8 간 변환을 수행한다. 단일 파일과 디렉터리 일괄 변환을 모두 지원한다.
+파일의 문자 인코딩을 감지하고 EUC-KR 또는 UTF-8 간 변환을 수행한다. 단일 파일과 디렉터리 일괄 변환을 모두 지원한다.
+  대표 트리거: `euc-kr`, `euckr`, `utf-8`, ...
+  선행조건: `Python 3.6+`, `chardet 라이브러리`
+- **team-agent**
+  경로: `.ai/adapters/claude/overrides/team-agent.md` (오버라이드 적용)
+  설명: tmux 환경에서 리더, 개발자, 리뷰어, 테스터, 문서 담당으로 역할을 분리한 멀티 에이전트 협업 워크플로우를 구성하고 파일 기반 메시지 박스로 조율한다.
+tmux 환경에서 리더, 개발자, 리뷰어, 테스터, 문서 담당으로 역할을 분리한 멀티 에이전트 협업 워크플로우를 구성하고 파일 기반 메시지 박스로 조율한다.
+  대표 트리거: `멀티 에이전트`, `team-agent`, `팀 개발`, ...
+  선행조건: `tmux 설치`, `claude, codex, gemini CLI 사용 가능`, `프로젝트 루트에서 스크립트 실행`
+
+### 프로젝트 로컬 스킬 (.ai-local)
+- 없음
 
