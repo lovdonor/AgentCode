@@ -89,6 +89,11 @@
   설명: tmux 환경에서 리더, 개발자, 리뷰어, 테스터, 문서 담당으로 역할을 분리한 멀티 에이전트 협업 워크플로우를 구성하고 파일 기반 메시지 박스로 조율한다.
   대표 트리거: `멀티 에이전트`, `team-agent`, `팀 개발`, ...
   선행조건: `tmux 설치`, `claude, codex, gemini CLI 사용 가능`, `프로젝트 루트에서 스크립트 실행`
+- **claude-statusline**
+  경로: `.ai/core/skills/claude-statusline/skill.md`
+  설명: Claude Code 하단 상태바(statusLine)에 시간, 컨텍스트 사용률(%), 모델명, 토큰 수를 표시하는 Node.js 스크립트와 settings.json 연동 방법을 제공한다.
+  대표 트리거: `상태바`, `statusline`, `컨텍스트 표시`, ...
+  선행조건: `Node.js 설치`, `~/.claude/settings.json 쓰기 권한`
 
 ### 프로젝트 로컬 스킬 (.ai-local)
 - 없음
