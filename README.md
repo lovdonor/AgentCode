@@ -64,6 +64,7 @@ my-project/
 
 ## 규칙
 
-- **스킬 추가**: `core/skills/<n>/` 에 `manifest.yaml` + `skill.md` 작성
+- **공용 스킬 추가**: `core/skills/<n>/` 에 `manifest.yaml` + `skill.md` 작성
+- **모델 전용 스킬 추가**: 공용화할 필요가 없는 기능이면 `adapters/<model>/overrides/<skill-name>.md`에 두고, 해당 모델의 `preamble.md`에서 전용 스킬로 문서화
 - **오버라이드 추가**: `adapters/<model>/overrides/<skill-name>.md` 작성 (필요할 때만)
 - **루트 파일 직접 수정 금지**: 항상 `generate.sh`로 재생성

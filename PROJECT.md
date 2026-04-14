@@ -12,7 +12,7 @@
 
 | 원칙 | 내용 |
 |------|------|
-| **단일 진실 소스** | 모든 공통 규칙·스킬은 `.ai/core/`에만 존재한다 |
+| **단일 진실 소스** | 모든 공통 규칙·스킬은 `.ai/core/`에만 존재하며, 모델 전용 스킬은 해당 adapter 아래에만 둔다 |
 | **모델 독립성** | `core`는 특정 AI 모델에 종속되지 않는다 |
 | **어댑터 패턴** | 모델별 차이는 `adapters/<model>/`에서만 처리한다 |
 | **자동 생성** | 루트의 `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`는 직접 수정하지 않고 스크립트로 생성한다 |
@@ -85,9 +85,9 @@ AgentCode/                          ← 이 저장소 루트 (git submodule 대�
 | `codex/preamble.md` | PR 단위 변경, 샌드박스 제약 고려 |
 | `gemini/preamble.md` | 멀티모달 입력 활용, MCP 서버 연동 안내 |
 
-### 3-3. `core/skills/<name>/` — 스킬
+### 3-3. `core/skills/<name>/` — 공용 스킬
 
-특정 작업 유형(빌드, 리뷰, 디버깅 등)에 대한 에이전트 행동 지침 묶음.
+여러 에이전트가 공통으로 재사용하는 작업 유형(빌드, 리뷰, 디버깅 등)에 대한 행동 지침 묶음.
 
 ```yaml
 # manifest.yaml 예시
@@ -113,6 +113,12 @@ adapters:
 2. 모델별 `preamble.md` 삽입
 3. `core/skills/` 내 각 스킬 삽입 (오버라이드 파일이 있으면 우선 적용)
 4. `.ai-local/` 존재 시 프로젝트 전용 내용 추가 머지
+
+### 3-5. `adapters/<model>/overrides/<name>.md` — 모델 전용 스킬
+
+특정 에이전트에서만 의미가 있는 기능은 공용 `core/skills`로 올리지 않는다.
+예를 들어 Claude/Codex CLI의 상태 표시줄처럼 제품 고유 설정을 다루는 스킬은
+해당 모델의 `overrides/` 아래에 두고 `preamble.md`에서 전용 스킬로 문서화한다.
 
 ---
 
