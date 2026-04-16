@@ -13,7 +13,8 @@ FROM="${2:-}"
 MESSAGE="${3:-}"
 PROJECT_ROOT="${4:-$(pwd)}"
 
-SESSION="team-agent"
+PROJECT_NAME=$(basename "$PROJECT_ROOT")
+SESSION="team-agent-${PROJECT_NAME}"
 TEAM_DIR="$PROJECT_ROOT/.team"
 VALID_ROLES=("leader" "developer" "reviewer" "tester" "docs")
 

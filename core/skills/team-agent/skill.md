@@ -2,7 +2,7 @@
 
 ## 개요
 
-tmux 세션 `team-agent` 의 단일 창 `team` 위에서 5개의 pane을 운영하며,
+tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 5개의 pane을 운영하며,
 리더·개발자·코드점검자·테스터·문서관리자가 파일 기반 메시지 버스(`.team/`)를
 통해 협력하여 개발 워크플로우를 완수한다.
 
@@ -36,7 +36,7 @@ bash .ai/core/skills/team-agent/scripts/setup.sh
 ```
 
 실행 결과:
-- tmux 세션 `team-agent` 생성
+- tmux 세션 `team-agent-<프로젝트명>` 생성 (예: `team-agent-Monsoon`)
 - 단일 창 `team` 에 5개 pane 생성 (tiled 레이아웃): `leader`, `developer`, `reviewer`, `tester`, `docs`
 - `.team/inbox/`, `.team/status/`, `.team/shared/` 디렉토리 초기화
 
