@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 TEAM_DIR="$PROJECT_ROOT/.team"
-VALID_ROLES=("leader" "developer" "reviewer" "tester" "docs")
+VALID_ROLES=("leader" "developer" "reviewer" "tester")
 
 # ── 인자 검증 ────────────────────────────────────────────────────────────────
 if [ -z "$ROLE" ]; then

@@ -16,7 +16,7 @@ PROJECT_ROOT="${4:-$(pwd)}"
 PROJECT_NAME=$(basename "$PROJECT_ROOT")
 SESSION="team-agent-${PROJECT_NAME}"
 TEAM_DIR="$PROJECT_ROOT/.team"
-VALID_ROLES=("leader" "developer" "reviewer" "tester" "docs")
+VALID_ROLES=("leader" "developer" "reviewer" "tester")
 
 # ── 인자 검증 ────────────────────────────────────────────────────────────────
 if [ -z "$TO" ] || [ -z "$FROM" ] || [ -z "$MESSAGE" ]; then

@@ -2,8 +2,8 @@
 
 ## 개요
 
-tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 5개의 pane을 운영하며,
-리더·개발자·코드점검자·테스터·문서관리자가 파일 기반 메시지 버스(`.team/`)를
+tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 4개의 pane을 운영하며,
+리더·개발자·코드점검자·테스터가 파일 기반 메시지 버스(`.team/`)를
 통해 협력하여 개발 워크플로우를 완수한다.
 
 ---
@@ -16,7 +16,6 @@ tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 5개�
 | 개발자 | `developer` | Claude Code | 구현, 코드 작성 |
 | 코드점검자 | `reviewer` | Codex | 코드 리뷰, 보안·품질 검사 |
 | 테스터 | `tester` | Gemini | 테스트 작성·실행, 버그 리포트 |
-| 문서관리자 | `docs` | Gemini | README, 변경로그, API 문서 작성 |
 
 ---
 
@@ -37,7 +36,7 @@ bash .ai/core/skills/team-agent/scripts/setup.sh
 
 실행 결과:
 - tmux 세션 `team-agent-<프로젝트명>` 생성 (예: `team-agent-Monsoon`)
-- 단일 창 `team` 에 5개 pane 생성 (tiled 레이아웃): `leader`, `developer`, `reviewer`, `tester`, `docs`
+- 단일 창 `team` 에 4개 pane 생성 (tiled 레이아웃): `leader`, `developer`, `reviewer`, `tester`
 - `.team/inbox/`, `.team/status/`, `.team/shared/` 디렉토리 초기화
 
 ---
@@ -50,8 +49,7 @@ bash .ai/core/skills/team-agent/scripts/setup.sh
 │   ├── leader.md      ← 리더 수신함
 │   ├── developer.md   ← 개발자 수신함
 │   ├── reviewer.md    ← 코드점검자 수신함
-│   ├── tester.md      ← 테스터 수신함
-│   └── docs.md        ← 문서관리자 수신함
+│   └── tester.md      ← 테스터 수신함
 ├── status/
 │   ├── task.md        ← 현재 태스크 및 단계
 │   └── progress.md    ← 역할별 진행 상황
@@ -82,11 +80,8 @@ bash .ai/core/skills/team-agent/scripts/send-msg.sh reviewer developer "구현 �
 # 코드점검자 → 테스터: 테스트 요청
 bash .ai/core/skills/team-agent/scripts/send-msg.sh tester reviewer "리뷰 통과. 테스트 진행 요청"
 
-# 테스터 → 문서관리자: 문서화 요청
-bash .ai/core/skills/team-agent/scripts/send-msg.sh docs tester "테스트 통과. 문서화 요청"
-
-# 문서관리자 → 리더: 완료 보고
-bash .ai/core/skills/team-agent/scripts/send-msg.sh leader docs "문서화 완료. 최종 검토 요청"
+# 테스터 → 리더: 완료 보고
+bash .ai/core/skills/team-agent/scripts/send-msg.sh leader tester "테스트 통과. 최종 검토 요청"
 ```
 
 ### 수신함 확인
@@ -119,9 +114,8 @@ bash .ai/core/skills/team-agent/scripts/status.sh
     - 통과       → tester에게 테스트 요청
 [5] tester: 테스트 실행
     - 버그 발견 → developer에게 버그 리포트 (3으로 복귀)
-    - 통과      → docs에게 문서화 요청
-[6] docs: 문서 작성 완료 → leader에게 최종 검토 요청
-[7] leader: 최종 검토 후 사용자에게 결과 보고
+    - 통과      → leader에게 최종 검토 요청
+[6] leader: 최종 검토 후 사용자에게 결과 보고
 ```
 
 ---
@@ -158,5 +152,4 @@ status: pending | in-progress | done | blocked
 | 개발자 | `feature/<task-name>` |
 | 코드점검자 | PR 리뷰 (브랜치 직접 수정 금지) |
 | 테스터 | `test/<task-name>` (테스트 코드만) |
-| 문서관리자 | `docs/<task-name>` |
 | 리더 | `main` / `dev` 머지 결정 |

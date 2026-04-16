@@ -9,7 +9,7 @@ PROJECT_NAME=$(basename "$PROJECT_ROOT")
 SESSION="team-agent-${PROJECT_NAME}"
 TEAM_DIR="$PROJECT_ROOT/.team"
 
-ROLES=("leader" "developer" "reviewer" "tester" "docs")
+ROLES=("leader" "developer" "reviewer" "tester")
 TEAM_WIN="team"
 
 # ── 1. tmux 세션 생성 ────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
 
   # 구버전 멀티-윈도우 구조(leader/developer/… 각자 별도 창) 감지 → 제거
   OLD_WINS=$(tmux list-windows -t "$SESSION" -F "#{window_name}" \
-    | grep -E "^(leader|developer|reviewer|tester|docs)$" || true)
+    | grep -E "^(leader|developer|reviewer|tester)$" || true)
   if [ -n "$OLD_WINS" ]; then
     echo "[setup] 구버전 멀티-윈도우 구조 감지 → 단일 창 pane 레이아웃으로 전환합니다."
     for WIN in $OLD_WINS; do
@@ -30,7 +30,7 @@ else
   tmux new-session -d -s "$SESSION" -n "$TEAM_WIN" -x 220 -y 50
 fi
 
-# ── 2. 단일 창 'team' 에 5개 pane 구성 ───────────────────────────────────────
+# ── 2. 단일 창 'team' 에 4개 pane 구성 ───────────────────────────────────────
 echo "[setup] 단일 창 '$TEAM_WIN' 에 ${#ROLES[@]}개 pane 구성 중..."
 
 # 'team' 창이 없으면 생성 (세션 첫 창 이름 변경 또는 신규 생성)
@@ -77,7 +77,7 @@ mkdir -p "$TEAM_DIR/status"
 mkdir -p "$TEAM_DIR/shared"
 
 # 수신함 파일 초기화 (없는 경우만)
-for ROLE in leader developer reviewer tester docs; do
+for ROLE in leader developer reviewer tester; do
   INBOX="$TEAM_DIR/inbox/$ROLE.md"
   if [ ! -f "$INBOX" ]; then
     cat > "$INBOX" << EOF
@@ -111,7 +111,6 @@ if [ ! -f "$TEAM_DIR/status/progress.md" ]; then
 | developer | idle | |
 | reviewer | idle | |
 | tester | idle | |
-| docs | idle | |
 EOF
 fi
 
@@ -132,7 +131,6 @@ declare -A ROLE_AGENT=(
   [developer]="claude"
   [reviewer]="codex"
   [tester]="gemini"
-  [docs]="gemini"
 )
 
 for idx in "${!ROLES[@]}"; do

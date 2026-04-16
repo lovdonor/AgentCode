@@ -3,7 +3,7 @@
 ## Phase 0 — 환경 초기화
 
 - [ ] tmux 세션 `team-agent` 생성 (`setup.sh` 실행)
-- [ ] 5개 창 확인: `leader`, `developer`, `reviewer`, `tester`, `docs`
+- [ ] 4개 창 확인: `leader`, `developer`, `reviewer`, `tester`
 - [ ] `.team/` 디렉토리 구조 확인
 - [ ] 각 창에서 에이전트 CLI 기동 확인
 
@@ -47,21 +47,11 @@
   - [ ] 엣지 케이스 검증
 - [ ] 결과에 따라 분기:
   - 버그 발견 → `developer`에게 버그 리포트 메시지 전송
-  - 통과 → `docs`에게 문서화 요청 메시지 전송
+  - 통과 → `leader`에게 최종 검토 요청 메시지 전송
 
-## Phase 5 — 문서화 (docs)
+## Phase 5 — 최종 검토 (leader)
 
 - [ ] `tester` 수신함 확인
-- [ ] 문서 작성/업데이트
-  - [ ] README
-  - [ ] CHANGELOG
-  - [ ] API 문서 (해당시)
-  - [ ] 사용 예시
-- [ ] `leader`에게 완료 보고 메시지 전송
-
-## Phase 6 — 최종 검토 (leader)
-
-- [ ] `docs` 수신함 확인
 - [ ] 전체 결과물 최종 검토
   - [ ] 요구사항 충족 여부 확인
   - [ ] 문서 완성도 확인

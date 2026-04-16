@@ -8,7 +8,7 @@ PROJECT_ROOT="${1:-$(pwd)}"
 PROJECT_NAME=$(basename "$PROJECT_ROOT")
 SESSION="team-agent-${PROJECT_NAME}"
 TEAM_DIR="$PROJECT_ROOT/.team"
-ROLES=("leader" "developer" "reviewer" "tester" "docs")
+ROLES=("leader" "developer" "reviewer" "tester")
 
 echo "========================================"
 echo " team-agent 팀 상태 대시보드"
