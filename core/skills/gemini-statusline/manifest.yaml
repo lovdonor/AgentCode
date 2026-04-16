@@ -1,0 +1,19 @@
+name: gemini-statusline
+version: "1.0"
+description: >
+  Gemini CLI의 하단 상태바(footer)를 설정하여 컨텍스트 사용량, 토큰 수, 모델 정보를 표시한다.
+
+# 트리거 키워드
+triggers:
+  - "Gemini 상태바"
+  - "상태바 설정"
+  - "컨텍스트 사용량"
+  - "토큰 수 표시"
+  - "statusline"
+  - "footer"
+
+# 모델별 어댑터 설정
+adapters:
+  claude: default
+  codex: default
+  gemini: override

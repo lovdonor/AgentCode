@@ -66,13 +66,35 @@ EOF
 
 echo "[send-msg] $FROM → $TO: 메시지 기록 완료 ($TIMESTAMP)"
 
-# ── tmux 창에 알림 전송 ──────────────────────────────────────────────────────
+# ── tmux pane에 알림 전송 ────────────────────────────────────────────────────
 if tmux has-session -t "$SESSION" 2>/dev/null; then
-  # 해당 창에 알림 메시지를 출력 (에이전트가 직접 확인하도록 유도)
   ALERT="[inbox] $FROM 으로부터 새 메시지가 도착했습니다. check-inbox.sh $TO 를 실행하세요."
-  tmux send-keys -t "$SESSION:$TO" "" ""   # 현재 입력 없이 빈 줄
-  tmux display-message -t "$SESSION:$TO" "$ALERT"
-  echo "[send-msg] tmux 창 '$TO'에 알림 전송 완료"
+
+  # pane-map.sh 로드하여 pane ID 조회 (타이틀 의존 제거)
+  PANE_MAP_FILE="$PROJECT_ROOT/.team/status/pane-map.sh"
+  PANE_ID=""
+  if [ -f "$PANE_MAP_FILE" ]; then
+    # shellcheck source=/dev/null
+    source "$PANE_MAP_FILE"
+    VARNAME="PANE_${TO}"
+    PANE_ID="${!VARNAME:-}"
+  fi
+
+  # pane-map 없거나 ID 없으면 타이틀로 폴백
+  if [ -z "$PANE_ID" ]; then
+    PANE_ID=$(tmux list-panes -t "$SESSION:team" -F "#{pane_id} #{pane_title}" 2>/dev/null \
+      | awk -v role="$TO" '$2==role {print $1}' | head -1)
+  fi
+
+  if [ -n "$PANE_ID" ]; then
+    NOTIFY="[inbox] $FROM 으로부터 새 메시지가 도착했습니다. .team/inbox/$TO.md 를 확인하고 지시에 따라 행동하세요."
+    tmux send-keys -t "$PANE_ID" "$NOTIFY"
+    sleep 1
+    tmux send-keys -t "$PANE_ID" Enter
+    echo "[send-msg] pane '$TO' ($PANE_ID)에 알림 전송 완료"
+  else
+    echo "[send-msg] 경고: pane '$TO' 를 찾을 수 없습니다. (setup.sh를 먼저 실행하세요)"
+  fi
 else
   echo "[send-msg] 경고: tmux 세션 '$SESSION' 없음. 파일에만 기록되었습니다."
 fi

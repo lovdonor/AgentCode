@@ -53,14 +53,19 @@ for ROLE in "${ROLES[@]}"; do
 done
 echo "----------------------------------------"
 
-# ── tmux 세션/창 상태 ────────────────────────────────────────────────────────
+# ── tmux 세션/pane 상태 ──────────────────────────────────────────────────────
 echo ""
 echo "[tmux 세션 상태]"
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   echo "  세션 '$SESSION' 활성"
-  echo "  창 목록:"
-  tmux list-windows -t "$SESSION" -F "    #I: #{window_name} (#{window_active_sessions} pane)" 2>/dev/null || \
-  tmux list-windows -t "$SESSION" -F "    #I: #{window_name}" 2>/dev/null
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -qx "team"; then
+    echo "  창: team (단일 창 multi-pane)"
+    tmux list-panes -t "$SESSION:team" \
+      -F "    pane #{pane_index}: #{pane_title} (#{pane_width}x#{pane_height})" 2>/dev/null
+  else
+    echo "  창 목록 (구버전):"
+    tmux list-windows -t "$SESSION" -F "    #I: #{window_name}" 2>/dev/null
+  fi
 else
   echo "  세션 '$SESSION' 비활성 (setup.sh를 실행하세요)"
 fi
