@@ -5,6 +5,22 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 
 ---
 
+## 스크립트 경로 (중요)
+
+본 워크플로의 모든 쉘 스크립트는 **프로젝트 루트 기준 아래 경로에만 존재**한다.
+다른 경로(`.team/...`, `./scripts/...` 등)로 추정하여 호출하면 `No such file or directory` 로 실패한다.
+
+| 스크립트 | 전체 경로 |
+|---|---|
+| `send-msg.sh`     | `.ai/core/skills/team-agent/scripts/send-msg.sh` |
+| `check-inbox.sh`  | `.ai/core/skills/team-agent/scripts/check-inbox.sh` |
+| `status.sh`       | `.ai/core/skills/team-agent/scripts/status.sh` |
+
+호출 시 반드시 `bash .ai/core/skills/team-agent/scripts/<script>` 형식의 **전체 경로**를 사용한다.
+아래 예시도 모두 이 규칙을 따른다.
+
+---
+
 ## 리더 역할 (`leader` 창)
 
 ### 핵심 책임
@@ -24,7 +40,7 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
    ## 참고 자료
    ```
 2. 개발자에게 지시할 때는 **구현 범위와 브랜치명**을 명시한다.
-3. 모든 단계 전환은 `send-msg.sh` 를 통해 명시적으로 수행한다.
+3. 모든 단계 전환은 `bash .ai/core/skills/team-agent/scripts/send-msg.sh` 를 통해 명시적으로 수행한다.
 4. 최종 보고 전 checklist.md 의 Phase 6을 모두 확인한다.
 
 ### Claude Code 특화 지시
@@ -43,7 +59,7 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 - 리뷰/테스트에서 지적된 사항을 수정한다.
 
 ### 행동 지침
-1. 작업 시작 전 반드시 `check-inbox.sh developer` 로 수신함을 확인한다.
+1. 작업 시작 전 반드시 `bash .ai/core/skills/team-agent/scripts/check-inbox.sh developer` 로 수신함을 확인한다.
 2. `requirements.md` 와 `design.md` 를 먼저 읽고 구현 방향을 확인한다.
 3. 구현 완료 후 아래를 수행하고 리뷰어에게 메시지를 보낸다:
    - 커밋 및 푸시
@@ -79,7 +95,7 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 | **suggestion** | 코드 스타일, 가독성, 선택적 개선 | developer 자체 판단 |
 
 ### 행동 지침
-1. 작업 시작 전 `check-inbox.sh reviewer` 로 수신함을 확인한다.
+1. 작업 시작 전 `bash .ai/core/skills/team-agent/scripts/check-inbox.sh reviewer` 로 수신함을 확인한다.
 2. 코드 검토 후 `.team/shared/review-result.md` 에 아래 형식으로 기록한다:
    ```markdown
    ## 리뷰 결과 — <날짜>
@@ -93,8 +109,8 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
    - [파일:라인] 문제 설명 / 수정 제안
    ```
 3. 기록 완료 후 **developer와 리더 양쪽에 동시에** 메시지를 보낸다:
-   - `send-msg.sh developer reviewer "리뷰 완료. review-result.md 확인 요망. critical N건 / major N건 / minor N건 / suggestion N건"`
-   - `send-msg.sh leader reviewer "리뷰 완료. review-result.md 확인 요망. critical N건 / major N건 / minor N건 / suggestion N건"`
+   - `bash .ai/core/skills/team-agent/scripts/send-msg.sh developer reviewer "리뷰 완료. review-result.md 확인 요망. critical N건 / major N건 / minor N건 / suggestion N건"`
+   - `bash .ai/core/skills/team-agent/scripts/send-msg.sh leader reviewer "리뷰 완료. review-result.md 확인 요망. critical N건 / major N건 / minor N건 / suggestion N건"`
 4. developer 의 반영 보류 통보 수신 시 — 이견이 있으면 리더에게 에스컬레이션한다.
 
 ### Claude Code 특화 지시
@@ -111,10 +127,10 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 - 모든 항목 통과 시 docs에게 문서화 요청 메시지를 보낸다.
 
 ### 행동 지침
-1. 작업 시작 전 `check-inbox.sh tester` 로 수신함을 확인한다.
+1. 작업 시작 전 `bash .ai/core/skills/team-agent/scripts/check-inbox.sh tester` 로 수신함을 확인한다.
 2. 테스트 결과를 `.team/shared/test-result.md` 에 기록한다.
 3. **버그 발견 시 — developer에게 직접 통신 (리더 불필요)**
-   - `send-msg.sh developer tester "<버그 내용 및 재현 방법>"` 으로 직접 리포트한다.
+   - `bash .ai/core/skills/team-agent/scripts/send-msg.sh developer tester "<버그 내용 및 재현 방법>"` 으로 직접 리포트한다.
    - developer 수정 완료 메시지 수신 후 해당 항목을 재테스트한다.
 4. 전체 통과 시 docs에게 완료 메시지를 보낸다.
 
