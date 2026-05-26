@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<!--
+  결정 폼 보일러플레이트 — .ai/adapters/_base.md 「복잡한 의사결정 요청 — HTML 결정 폼」 참조
+
+  사용 방법:
+  1. 본 파일을 프로젝트 docs/<주제>.html 로 복사
+  2. <header>, 종합 요약 표, 항목별 패널의 더미 콘텐츠를 실제 결정 사항으로 교체
+  3. 각 옵션 라디오의 data-question(Q-ID), data-title(옵션 그룹 제목)를 채움
+  4. 추천 옵션의 라디오 input에 data-rec="true" 추가 ("추천안으로 모두 선택" 버튼이 자동 인식)
+  5. CSS·JS·툴바는 수정 불필요 (그대로 사용)
+-->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>의사결정 요청 — <문서 제목></title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --border: #e1e4e8;
+    --text: #24292e; --muted: #6a737d;
+    --accent: #0366d6; --accent-hover: #0250a8;
+    --success: #28a745; --warning: #d97706; --danger: #d73a49;
+    --code-bg: #f3f4f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  header { border-bottom: 2px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+  header h1 { margin: 0 0 6px; font-size: 26px; }
+  header .meta { color: var(--muted); font-size: 13px; }
+  h2 { margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); font-size: 20px; }
+  h3 { margin: 18px 0 8px; font-size: 15px; }
+  section.panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px 24px; margin-bottom: 18px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f1f3f5; font-weight: 600; }
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px;
+  }
+  pre {
+    background: #1f2328; color: #e6edf3; padding: 14px 16px; border-radius: 6px;
+    overflow-x: auto; font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; line-height: 1.5;
+  }
+  pre .kw { color: #ff7b72; }
+  pre .cm { color: #8b949e; font-style: italic; }
+  pre .str { color: #a5d6ff; }
+  pre .bad { color: #ff7b72; font-weight: 600; }
+  pre .good { color: #7ee787; font-weight: 600; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; margin-right: 6px;
+  }
+  .badge-rec    { background: #d1fae5; color: #065f46; }
+  .badge-info   { background: #dbeafe; color: #1e40af; }
+  .badge-warn   { background: #fef3c7; color: #92400e; }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-major  { background: #fee2e2; color: #991b1b; }
+  .badge-minor  { background: #e0e7ff; color: #3730a3; }
+  .item {
+    border-left: 4px solid var(--danger); background: #fef9f9;
+    padding: 14px 18px; margin: 12px 0; border-radius: 0 6px 6px 0;
+  }
+  .item.minor { border-left-color: var(--accent); background: #f1f8ff; }
+  .item.info  { border-left-color: var(--warning); background: #fffbeb; }
+  .item h3 { margin-top: 0; color: var(--danger); }
+  .item.minor h3 { color: var(--accent); }
+  .item.info  h3 { color: var(--warning); }
+  .item .meta-row {
+    font-size: 12.5px; color: var(--muted); margin-bottom: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .item h4 {
+    margin: 14px 0 6px; font-size: 14px; color: var(--text);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .options { margin: 8px 0; }
+  .options label {
+    display: block; padding: 8px 10px; margin: 4px 0;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: #fff; cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  }
+  .options label:hover { background: #f1f8ff; border-color: var(--accent); }
+  .options input[type="radio"] { margin-right: 8px; vertical-align: middle; }
+  .options label:has(input:checked) { background: #ddf4ff; border-color: var(--accent); }
+  .opt-desc { display: block; color: var(--muted); font-size: 12px; margin-left: 24px; margin-top: 2px; }
+  .opt-effort {
+    display: inline-block; margin-left: 8px;
+    background: #f1f5f9; color: var(--muted);
+    font-size: 11px; padding: 1px 7px; border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .memo {
+    width: 100%; min-height: 50px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 5px;
+    font-family: inherit; font-size: 13px; resize: vertical; margin-top: 6px;
+  }
+  .memo:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(3,102,214,0.15); }
+  .impact {
+    background: #fffbeb; border-left: 3px solid var(--warning);
+    padding: 8px 12px; margin: 8px 0; font-size: 13px; border-radius: 0 4px 4px 0;
+  }
+  .toolbar {
+    position: sticky; bottom: 0;
+    background: linear-gradient(to top, var(--bg) 70%, rgba(246,247,249,0));
+    padding: 16px 0 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  button {
+    background: var(--accent); color: white; border: none;
+    padding: 10px 18px; border-radius: 5px;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { background: #f1f3f5; }
+  #result {
+    width: 100%; min-height: 220px; padding: 12px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px; background: #fff; margin-top: 12px; resize: vertical;
+  }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #1f2328; color: white; padding: 12px 20px; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0; transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  .toc { background: #f8fafc; padding: 12px 18px; border-radius: 6px; border: 1px solid var(--border); }
+  .toc ol { margin: 4px 0; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1><문서 제목 — 예: 모듈명 v2 결정 요청></h1>
+  <div class="meta"><프로젝트> · <맥락 부제> · <상태/사이클></div>
+</header>
+
+<!-- ─────────── 1. 목차 ─────────── -->
+<section class="panel toc">
+  <strong>목차</strong>
+  <ol>
+    <li><a href="#summary">1. 종합 요약</a></li>
+    <li><a href="#q1">2. Q1 — <첫 결정 제목></a></li>
+    <li><a href="#q2">3. Q2 — <두 번째 결정 제목></a></li>
+    <!-- 결정 항목 수에 맞춰 추가 -->
+  </ol>
+</section>
+
+<!-- ─────────── 2. 종합 요약 표 ─────────── -->
+<section class="panel" id="summary">
+  <h2>1. 종합 요약</h2>
+  <table>
+    <tr><th style="width:6%">ID</th><th style="width:10%">치명도/우선</th><th style="width:30%">증상·맥락 한 줄</th><th>추천 옵션</th><th style="width:14%">작업량</th></tr>
+    <tr>
+      <td>Q1</td><td><span class="badge badge-major">major</span></td>
+      <td><Q1 한 줄 요약></td>
+      <td>(A) <추천안 한 줄></td>
+      <td>~N줄</td>
+    </tr>
+    <tr>
+      <td>Q2</td><td><span class="badge badge-minor">minor</span></td>
+      <td><Q2 한 줄 요약></td>
+      <td>(A) <추천안 한 줄></td>
+      <td>~N줄</td>
+    </tr>
+    <!-- 결정 항목 수에 맞춰 행 추가 -->
+  </table>
+  <p style="font-size:13px;color:var(--muted)">추천안 전체 적용 시 약 <b>N줄 추가</b>, <부수 작업 1줄>.</p>
+</section>
+
+<!-- ─────────── 3. 항목별 패널 (Q1 예시) ─────────── -->
+<section class="panel">
+  <h2 id="q1">2. Q1 — <첫 결정 제목> <span class="badge badge-major">major</span></h2>
+  <div class="item">
+    <div class="meta-row">위치: <파일경로:라인> 또는 <맥락 식별자></div>
+
+    <h4>시나리오</h4>
+<pre><시나리오 코드 또는 텍스트 예시>
+- 정상 흐름: <span class="good">✓</span>
+- 문제 흐름: <span class="bad">❌</span></pre>
+
+    <h4>영향</h4>
+    <div class="impact"><영향 설명 — 사용자가 왜 결정해야 하는지></div>
+
+    <h4>수정 옵션</h4>
+    <div class="options" data-question="Q1" data-title="Q1 첫 결정 제목">
+      <label><input type="radio" name="q1" value="A. <옵션 A 전체 텍스트>" data-rec="true">
+        <span class="badge badge-rec">추천</span><b>(A) <옵션 A 짧은 제목></b> <span class="opt-effort">~N줄</span>
+        <span class="opt-desc"><옵션 A 상세 설명></span></label>
+      <label><input type="radio" name="q1" value="B. <옵션 B 전체 텍스트>">
+        <b>(B) <옵션 B 짧은 제목></b> <span class="opt-effort">~N줄</span>
+        <span class="opt-desc"><옵션 B 상세 설명></span></label>
+      <label><input type="radio" name="q1" value="C. <옵션 C 전체 텍스트>">
+        <b>(C) <옵션 C 짧은 제목></b> <span class="opt-effort">~N줄</span>
+        <span class="opt-desc"><옵션 C 상세 설명></span></label>
+    </div>
+    <textarea class="memo" data-question="Q1" placeholder="추가 의견 (선택)"></textarea>
+  </div>
+</section>
+
+<!-- ─────────── 3. 항목별 패널 (Q2 예시 — minor) ─────────── -->
+<section class="panel">
+  <h2 id="q2">3. Q2 — <두 번째 결정 제목> <span class="badge badge-minor">minor</span></h2>
+  <div class="item minor">
+    <div class="meta-row">위치: <파일경로:라인></div>
+
+    <h4>시나리오</h4>
+<pre><시나리오 예시></pre>
+
+    <h4>영향</h4>
+    <div class="impact"><영향 설명></div>
+
+    <h4>수정 옵션</h4>
+    <div class="options" data-question="Q2" data-title="Q2 두 번째 결정 제목">
+      <label><input type="radio" name="q2" value="A. <옵션 A>" data-rec="true">
+        <span class="badge badge-rec">추천</span><b>(A) <짧은 제목></b>
+        <span class="opt-desc"><설명></span></label>
+      <label><input type="radio" name="q2" value="B. <옵션 B>">
+        <b>(B) <짧은 제목></b>
+        <span class="opt-desc"><설명></span></label>
+    </div>
+    <textarea class="memo" data-question="Q2" placeholder="추가 의견 (선택)"></textarea>
+  </div>
+
+  <!-- ─────────── 4. 추가 메모 (전체) ─────────── -->
+  <div class="item info">
+    <h3>추가 메모 (전체)</h3>
+    <textarea class="memo" id="overall-memo" data-question="OVERALL" placeholder="우선순위, 추가 요구사항, 다음 단계 등 자유 입력"></textarea>
+  </div>
+</section>
+
+<!-- ─────────── 5. 하단 고정 툴바 + 결과 + 토스트 ─────────── -->
+<div class="toolbar">
+  <button onclick="collectDecisions()">📋 결정사항 모으기</button>
+  <button class="secondary" onclick="copyResult()">복사</button>
+  <button class="secondary" onclick="selectRecommended()">추천안으로 모두 선택</button>
+  <button class="secondary" onclick="clearAll()">초기화</button>
+</div>
+
+<textarea id="result" placeholder="「결정사항 모으기」 버튼을 누르면 여기에 결과가 표시됩니다."></textarea>
+
+<div class="toast" id="toast">복사되었습니다</div>
+
+<script>
+function collectDecisions() {
+  const questions = document.querySelectorAll('.options');
+  const lines = [];
+  lines.push('# ' + document.title);
+  lines.push('');
+  lines.push('생성: ' + new Date().toLocaleString('ko-KR'));
+  lines.push('');
+
+  questions.forEach((box) => {
+    const qid = box.dataset.question;
+    const title = box.dataset.title;
+    const checked = box.querySelector('input[type="radio"]:checked');
+    const memo = document.querySelector(`textarea.memo[data-question="${qid}"]`);
+    lines.push(`## ${qid}. ${title}`);
+    lines.push(checked ? `- 선택: **${checked.value}**` : `- 선택: (미선택)`);
+    if (memo && memo.value.trim()) lines.push(`- 메모: ${memo.value.trim()}`);
+    lines.push('');
+  });
+
+  const overall = document.getElementById('overall-memo');
+  if (overall && overall.value.trim()) {
+    lines.push('## 추가 메모');
+    lines.push(overall.value.trim());
+    lines.push('');
+  }
+
+  document.getElementById('result').value = lines.join('\n');
+}
+
+async function copyResult() {
+  const text = document.getElementById('result').value;
+  if (!text.trim()) { showToast('먼저 「결정사항 모으기」 버튼을 누르세요', true); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('복사되었습니다');
+  } catch (e) {
+    const ta = document.getElementById('result');
+    ta.select(); document.execCommand('copy');
+    showToast('복사되었습니다 (fallback)');
+  }
+}
+
+function selectRecommended() {
+  document.querySelectorAll('input[type="radio"][data-rec="true"]').forEach(r => r.checked = true);
+}
+
+function clearAll() {
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  document.querySelectorAll('textarea.memo').forEach(t => t.value = '');
+  document.getElementById('result').value = '';
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#d73a49' : '#1f2328';
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+</script>
+</div>
+</body>
+</html>
