@@ -6,7 +6,7 @@ description: >
 
 prerequisites:
   - "tmux 설치"
-  - "claude, codex, gemini CLI 사용 가능"
+  - "claude, codex, agy CLI 사용 가능"
   - "프로젝트 루트에서 스크립트 실행"
 
 triggers:

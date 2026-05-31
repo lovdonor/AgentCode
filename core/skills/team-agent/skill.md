@@ -15,14 +15,14 @@ tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 4개�
 | 리더 | `leader` | Claude Code | 요구사항 분석, 작업 분배, 최종 검토 |
 | 개발자 | `developer` | Claude Code | 구현, 코드 작성 |
 | 코드점검자 | `reviewer` | Codex | 코드 리뷰, 보안·품질 검사 |
-| 테스터 | `tester` | Gemini | 테스트 작성·실행, 버그 리포트 |
+| 테스터 | `tester` | Antigravity | 테스트 작성·실행, 버그 리포트 |
 
 ---
 
 ## 사전 요구사항
 
 - tmux 설치
-- 각 에이전트 CLI 사용 가능 (`claude`, `codex`, `gemini`)
+- 각 에이전트 CLI 사용 가능 (`claude`, `codex`, `agy`)
 - 프로젝트 루트에서 스크립트 실행
 
 ---

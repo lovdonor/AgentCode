@@ -130,7 +130,7 @@ declare -A ROLE_AGENT=(
   [leader]="claude"
   [developer]="claude"
   [reviewer]="codex"
-  [tester]="gemini"
+  [tester]="agy"
 )
 
 for idx in "${!ROLES[@]}"; do
