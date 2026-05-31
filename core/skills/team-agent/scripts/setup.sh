@@ -54,6 +54,8 @@ done
 tmux select-layout -t "$SESSION:$TEAM_WIN" tiled
 
 # pane 타이틀 설정 (역할명 표시) 및 pane ID 매핑 저장
+# pane-map.sh 작성 전에 디렉토리를 미리 생성 (순서 의존 버그 방지)
+mkdir -p "$TEAM_DIR/status"
 PANE_MAP_FILE="$TEAM_DIR/status/pane-map.sh"
 echo "# pane-map.sh — role → pane ID 매핑 (setup.sh 자동 생성)" > "$PANE_MAP_FILE"
 
