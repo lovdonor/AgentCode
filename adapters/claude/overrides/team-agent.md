@@ -5,6 +5,19 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 
 ---
 
+## 세션 격리 규칙 (필수)
+
+- **세션명 규칙:** `team-agent-<프로젝트명>` — 프로젝트명은 `basename $(pwd)` 기준 (예: `team-agent-AeroTrade`)
+- **신규 세션 전용:** 기존 tmux 세션(`tmux list-sessions`)은 절대 건드리지 않는다. 다른 프로젝트 세션에 pane을 추가하거나 명령을 전송하면 안 된다.
+- **항상 `setup.sh` 사용:** 수동 `tmux split-window` 대신 반드시 아래 스크립트로 실행한다.
+  ```bash
+  bash .ai/core/skills/team-agent/scripts/setup.sh
+  ```
+  스크립트가 세션 존재 여부를 자동 감지하고 중복 생성을 방지한다.
+- **`$TMUX_PANE` 의존 금지:** Bash 서브셸에서는 `$TMUX_PANE` 이 비어 있을 수 있으므로, 직접 `$TMUX_PANE` 을 LEADER로 사용하는 방식은 사용하지 않는다.
+
+---
+
 ## 스크립트 경로 (중요)
 
 본 워크플로의 모든 쉘 스크립트는 **프로젝트 루트 기준 아래 경로에만 존재**한다.
