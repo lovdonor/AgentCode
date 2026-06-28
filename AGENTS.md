@@ -22,6 +22,21 @@
 - 프로젝트별 예외, 보강 규칙, 로컬 스킬은 `.ai-local/`에서 추가로 로드합니다.
 - 동일한 주제에서 `.ai/`와 `.ai-local/`의 지시가 충돌하면 `.ai-local/`을 우선하고, `.ai-local/`에 정의가 없으면 `.ai/` 기본값을 따릅니다.
 
+## 팀 에이전트 협업 시 — 완료 알람 필수
+
+`team-agent` 워크플로우(리더·개발자·리뷰어·테스터)로 협업할 때, 모든 단계 전환
+(시작·완료·요청·보고·회신·에스컬레이션)은 **반드시** `send-msg.sh` 호출로 마무리한다.
+
+- 결과 파일(`.md`)을 작성하는 것만으로는 **아무도 알지 못한다** — 다른 pane 은 `send-msg.sh` 가 보내는 tmux 알림으로만 새 메시지를 인지한다.
+- ✅ 결과 파일 작성 → **그 직후** 알람 호출 → 그제서야 그 단계가 완료된다.
+- 호출: `bash .ai/core/skills/team-agent/scripts/send-msg.sh <수신자> <발신자> "<메시지>"`
+- ❌ `.team/inbox/*.md` 직접 편집 / tmux 에 말로만 띄우기 — 알림·progress 갱신 누락.
+- 이 알람 호출을 빠뜨린 단계는 **"미완료"** 로 간주한다.
+
+## 복잡한 의사결정 요청
+
+결정 사항이 3개 이상이거나 옵션 비교 설명이 길면 `docs/<주제>.html`에 결정 폼을 생성한다. 보일러플레이트·사용 가이드: `.ai/adapters/templates/`.
+
 ---
 
 # Codex 어댑터
@@ -65,16 +80,26 @@
 스킬은 아래 순서로 참조한다. 프로젝트 로컬 `.ai-local/skills` 가 동일 주제의 공유 `.ai/core/skills` 보다 우선하며, 로컬 정의가 없으면 공유 스킬을 사용한다.
 
 ### 공유 스킬 (.ai)
+- **agent-knowledge**
+  경로: `.ai/core/skills/agent-knowledge/skill.md`
+  설명: 작업 가이드 지식 베이스(AgentKnowledge)를 작업 기준으로 검색해 같은 작업을 다음에 한 번에 수행하고, 막혔을 땐 증상으로도 찾는다. 어려운 작업을 푼 세션 끝에 가이드 entry 로 capture 한다.
+  대표 트리거: `"어떻게 구현"`, `이 작업 어떻게`, `"이거 KB로 정리해"`, ...
+  선행조건: `"AgentKnowledge repo 경로 핀"`, `python3`
 - **encoding-convert**
   경로: `.ai/core/skills/encoding-convert/skill.md`
   설명: 파일의 문자 인코딩을 감지하고 EUC-KR 또는 UTF-8 간 변환을 수행한다. 단일 파일과 디렉터리 일괄 변환을 모두 지원한다.
   대표 트리거: `euc-kr`, `euckr`, `utf-8`, ...
   선행조건: `Python 3.6+`, `chardet 라이브러리`
+- **gemini-statusline**
+  경로: `.ai/core/skills/gemini-statusline/skill.md`
+  설명: Gemini CLI의 하단 상태바(footer)를 설정하여 컨텍스트 사용량, 토큰 수, 모델 정보를 표시한다.
+  대표 트리거: `Gemini 상태바`, `상태바 설정`, `컨텍스트 사용량`, ...
+  선행조건: 없음
 - **team-agent**
   경로: `.ai/adapters/codex/overrides/team-agent.md` (오버라이드 적용)
   설명: tmux 환경에서 리더, 개발자, 리뷰어, 테스터, 문서 담당으로 역할을 분리한 멀티 에이전트 협업 워크플로우를 구성하고 파일 기반 메시지 박스로 조율한다.
   대표 트리거: `멀티 에이전트`, `team-agent`, `팀 개발`, ...
-  선행조건: `tmux 설치`, `claude, codex, gemini CLI 사용 가능`, `프로젝트 루트에서 스크립트 실행`
+  선행조건: `tmux 설치`, `claude, codex, agy CLI 사용 가능`, `"프로젝트 루트에서 스크립트 실행"`
 
 ### 프로젝트 로컬 스킬 (.ai-local)
 - 없음

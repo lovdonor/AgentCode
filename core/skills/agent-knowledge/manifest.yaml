@@ -1,0 +1,29 @@
+name: agent-knowledge
+version: "1.0"
+description: >
+  작업 가이드 지식 베이스(AgentKnowledge)를 작업 기준으로 검색해 같은 작업을 다음에 한 번에 수행하고,
+  막혔을 땐 증상으로도 찾는다. 어려운 작업을 푼 세션 끝에 가이드 entry 로 capture 한다.
+
+prerequisites:
+  - "AgentKnowledge repo 경로 핀"
+  - "python3"
+
+# 이 스킬이 참조하는 정책 (없음)
+policies: []
+
+# 트리거 키워드: 사용자 요청에 아래 키워드가 포함되면 이 스킬을 우선 검토한다.
+triggers:
+  - "어떻게 구현"
+  - "이 작업 어떻게"
+  - "이거 KB로 정리해"
+  - "AgentKnowledge"
+  - "작업 가이드"
+  - "전에 한 방식"
+  - "비슷한 작업"
+  - "비슷한 문제"
+
+# 모델별 어댑터 설정 — 읽기/쓰기 프로토콜은 모델 무관이라 전부 default
+adapters:
+  claude: default
+  codex: default
+  gemini: default
