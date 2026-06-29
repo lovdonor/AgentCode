@@ -3,7 +3,7 @@
 이 프로젝트는 **AgentKnowledge**(작업 가이드 KB — "이 작업은 이렇게 하면 한 번에 된다"를 모아둔 곳)를 참조한다.
 **작업 가이드가 본체**이고 과거의 시행착오·증상은 그 가이드를 뒷받침한다.
 KB의 **실제 경로**는 `.ai-local/policies/agent-knowledge.md`의 핀을 따른다.
-**전체 프로토콜·스키마의 단일 진실원본은 KB repo의 `AGENTS.md`** 다 — 여기서는 중복하지 않고 운영 요점만 둔다.
+**전체 프로토콜·스키마의 단일 진실원본은 KB repo의 `AGENTS.md`** 다(주로 *쓸 때* 참조) — 일상 조회는 그 파일을 열지 말고 `INDEX.md`부터. 여기서는 중복하지 않고 운영 요점만 둔다.
 
 ## 언제 읽나 (어떤 작업을 시작할 때)
 
@@ -12,6 +12,12 @@ KB의 **실제 경로**는 `.ai-local/policies/agent-knowledge.md`의 핀을 따
 3. **고른 entry 1개만** 열고, **「올바른 방법 — 그대로 따라하기」 섹션부터** 따라간다. INDEX가 놓치면 KB `entries/`를 grep.
 
 → KB 전체를 컨텍스트에 넣지 않는다 (토큰 전략의 핵심).
+
+### snippets 읽기 규칙
+
+- entry가 `snippets/<slug>/`를 참조하면, 먼저 해당 snippet 디렉터리의 `README.md`만 읽어 파일 역할과 필요한 파일을 확인한다.
+- snippet 파일은 entry 또는 snippet `README.md`가 지정한 파일만 **1개씩** 연다.
+- `snippets/` 전체 또는 snippet 디렉터리 전체를 한 번에 읽지 않는다. 큰 코드/Tcl 정본은 필요한 부분만 선별해 읽는다.
 
 ## 언제 쓰나 (capture)
 
