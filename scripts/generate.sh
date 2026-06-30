@@ -19,7 +19,7 @@ REPO_ROOT="$(cd "$AI_DIR/.." && pwd)"
 declare -A MODEL_OUTPUT=(
   [claude]="CLAUDE.md"
   [codex]="AGENTS.md"
-  [gemini]="GEMINI.md"
+  [agy]="AGY.md"
 )
 
 trim() {
@@ -305,12 +305,12 @@ if [[ $# -gt 0 ]]; then
     if [[ -v "MODEL_OUTPUT[$model]" ]]; then
       assemble "$model"
     else
-      echo "지원하지 않는 모델: $model (claude|codex|gemini)" >&2
+      echo "지원하지 않는 모델: $model (claude|codex|agy)" >&2
       exit 1
     fi
   done
 else
-  for model in claude codex gemini; do
+  for model in claude codex agy; do
     assemble "$model"
   done
 fi

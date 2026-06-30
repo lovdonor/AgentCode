@@ -103,7 +103,7 @@ triggers:
 adapters:
   claude: override       # adapters/claude/overrides/code-review.md 적용
   codex: default
-  gemini: default
+  agy: default
 ```
 
 ### 3-4. `generate.sh` — 자동 생성 스크립트
@@ -139,7 +139,7 @@ git submodule add https://github.com/lovdonor/AgentCode.git .ai
 
 # 특정 모델만 생성
 .ai/scripts/generate.sh claude
-.ai/scripts/generate.sh gemini
+.ai/scripts/generate.sh agy
 ```
 
 생성된 파일:
@@ -148,14 +148,14 @@ git submodule add https://github.com/lovdonor/AgentCode.git .ai
 my-project/
 ├── CLAUDE.md    ← Claude Code가 자동으로 읽는 컨텍스트
 ├── AGENTS.md    ← Codex가 자동으로 읽는 컨텍스트
-├── GEMINI.md    ← Gemini가 자동으로 읽는 컨텍스트
+├── AGY.md       ← Antigravity(agy)용 컨텍스트
 └── .ai/         ← submodule (이 저장소)
 ```
 
 생성된 파일들을 프로젝트 저장소에 커밋한다:
 
 ```bash
-git add CLAUDE.md AGENTS.md GEMINI.md
+git add CLAUDE.md AGENTS.md AGY.md
 git commit -m "chore: AI 컨텍스트 파일 초기 생성"
 ```
 

@@ -22,4 +22,4 @@ triggers:
 adapters:
   claude: override   # adapters/claude/overrides/team-agent.md 적용
   codex: override    # adapters/codex/overrides/team-agent.md 적용
-  gemini: override   # adapters/gemini/overrides/team-agent.md 적용
+  agy: override      # adapters/agy/overrides/team-agent.md 적용

@@ -1,7 +1,9 @@
 name: gemini-statusline
 version: "1.0"
+deprecated: true  # Gemini CLI 미사용으로 더 이상 사용하지 않음
 description: >
-  Gemini CLI의 하단 상태바(footer)를 설정하여 컨텍스트 사용량, 토큰 수, 모델 정보를 표시한다.
+  [DEPRECATED] Gemini CLI의 하단 상태바(footer)를 설정하여 컨텍스트 사용량, 토큰 수, 모델 정보를 표시한다.
+  Gemini CLI를 사용하지 않으므로 이 스킬은 비활성 상태입니다.
 
 # 트리거 키워드
 triggers:

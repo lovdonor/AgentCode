@@ -27,4 +27,4 @@ triggers: []
 adapters:
   claude: default
   codex: default
-  gemini: default
+  agy: default
