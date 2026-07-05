@@ -48,21 +48,8 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 
 ### 역할 간 소통 경로 (단일 통로 원칙)
 
-리더는 모든 소통의 **허브(hub)** 이며, 역할 간 **직접 통보는 금지**한다.
-아래 경로 외의 송·수신은 `send-msg.sh` 에서 허용하더라도 원칙적으로 사용하지 않는다.
-
-| 시점 | 송신자 → 수신자 |
-|---|---|
-| 요구사항 확정 후 구현 지시 | leader → developer |
-| 구현 완료 보고 | developer → leader |
-| 리뷰 요청 | leader → reviewer |
-| 리뷰 결과 보고 | reviewer → leader (**developer 에게 직접 전달 금지**) |
-| 재작업 지시 | leader → developer |
-| 테스트 요청 | leader → tester |
-| 테스트 결과 / 버그 리포트 | tester → leader (**developer 에게 직접 전달 금지**) |
-| 버그 재작업 지시 | leader → developer |
-
-리더는 reviewer · tester 의 보고를 점검하고, 필요한 경우 사용자 확인을 거친 뒤 developer 에게 선별하여 지시한다. 이 과정에서 리더는 **판단 주체의 이중화(reviewer/tester 의 직접 지시와 리더 지시가 충돌하는 상황)를 방지**한다.
+core `skill.md` 의 **「역할 간 소통 경로 (단일 통로 원칙)」** 표를 그대로 따른다
+(공통 규칙 상속 — 리더 허브, 역할 간 직접 통보 금지, 판단 이중화 방지).
 
 ### 진행 상태 기록
 

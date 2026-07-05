@@ -69,19 +69,23 @@ bash .ai/core/skills/team-agent/scripts/setup.sh
 bash .ai/core/skills/team-agent/scripts/send-msg.sh <수신자> <발신자> "<메시지>"
 ```
 
-예시:
+예시 (모든 경로는 리더 허브를 경유한다 — 아래 「역할 간 소통 경로」 참조):
 ```bash
-# 리더 → 개발자: 구현 요청
+# 리더 → 개발자: 구현 지시
 bash .ai/core/skills/team-agent/scripts/send-msg.sh developer leader "auth 모듈 구현 시작. requirements.md 참조"
 
-# 개발자 → 코드점검자: 리뷰 요청
-bash .ai/core/skills/team-agent/scripts/send-msg.sh reviewer developer "구현 완료. feature/auth 브랜치 리뷰 요청"
+# 개발자 → 리더: 구현 완료 보고 (빌드 검증 기록 포함)
+bash .ai/core/skills/team-agent/scripts/send-msg.sh leader developer "auth 구현 완료. 빌드 에러0/경고0. 검증 요청"
 
-# 코드점검자 → 테스터: 테스트 요청
-bash .ai/core/skills/team-agent/scripts/send-msg.sh tester reviewer "리뷰 통과. 테스트 진행 요청"
+# 리더 → 코드점검자: 리뷰 요청
+bash .ai/core/skills/team-agent/scripts/send-msg.sh reviewer leader "auth 리뷰 요청. feature/auth 브랜치, 빌드 재실행 불요"
 
-# 테스터 → 리더: 완료 보고
-bash .ai/core/skills/team-agent/scripts/send-msg.sh leader tester "테스트 통과. 최종 검토 요청"
+# 코드점검자 → 리더: 리뷰 결과 보고 (developer 직접 전달 금지)
+bash .ai/core/skills/team-agent/scripts/send-msg.sh leader reviewer "리뷰 완료. review-result.md 참조. 판정: GO"
+
+# 리더 → 테스터: 테스트 요청 / 테스터 → 리더: 결과 보고
+bash .ai/core/skills/team-agent/scripts/send-msg.sh tester leader "auth 검증 요청. DoD 기준 test-result.md 기록"
+bash .ai/core/skills/team-agent/scripts/send-msg.sh leader tester "테스트 PASS. test-result.md 갱신 완료"
 ```
 
 ### 수신함 확인
@@ -103,20 +107,43 @@ bash .ai/core/skills/team-agent/scripts/status.sh
 
 ---
 
-## 표준 워크플로우
+## 표준 워크플로우 (리더 허브 모델)
 
 ```
 [1] 사용자 → leader: 요구사항 전달
-[2] leader: requirements.md 작성 → developer에게 구현 지시
-[3] developer: 구현 완료 → reviewer에게 리뷰 요청
-[4] reviewer: 코드 리뷰 → review-result.md 작성
-    - 이슈 있음 → developer에게 수정 요청 (3으로 복귀)
-    - 통과       → tester에게 테스트 요청
-[5] tester: 테스트 실행
-    - 버그 발견 → developer에게 버그 리포트 (3으로 복귀)
-    - 통과      → leader에게 최종 검토 요청
-[6] leader: 최종 검토 후 사용자에게 결과 보고
+[2] leader: requirements.md 작성 → developer 에게 구현 지시
+[3] developer: 구현 + 빌드 검증(정본, 결과 기록) → leader 에게 완료 보고
+[4] leader → reviewer: 리뷰 요청
+    reviewer: 코드 리뷰 → review-result.md 작성 → leader 에게 결과 보고
+    - 이슈 있음 → leader 가 점검·선별 후 developer 에게 재작업 지시 (3으로 복귀)
+    - 통과(GO)  → leader → tester: 테스트 요청
+[5] tester: 테스트 실행 → test-result.md 작성 → leader 에게 결과 보고
+    - 버그 발견 → leader 가 developer 에게 수정 지시 (3으로 복귀)
+    - 통과      → leader 최종 검토
+[6] leader: 사용자에게 결과 보고
 ```
+
+---
+
+## 역할 간 소통 경로 (단일 통로 원칙)
+
+리더가 모든 소통의 **허브(hub)** 다. 역할 간 **직접 통보는 금지**한다 —
+reviewer/tester 의 직접 지시와 리더 지시가 충돌하는 **판단 이중화**를 방지한다.
+
+| 시점 | 송신자 → 수신자 |
+|---|---|
+| 요구사항 확정 후 구현 지시 | leader → developer |
+| 구현 완료 보고 | developer → leader |
+| 리뷰 요청 | leader → reviewer |
+| 리뷰 결과 보고 | reviewer → leader (**developer 직접 전달 금지**) |
+| 재작업 지시 | leader → developer |
+| 테스트 요청 | leader → tester |
+| 테스트 결과 / 버그 리포트 | tester → leader (**developer 직접 전달 금지**) |
+| 버그 재작업 지시 | leader → developer |
+
+리더는 reviewer·tester 의 보고를 점검·선별하고, 필요 시 사용자 확인을 거친 뒤
+developer 에게 지시한다. developer 는 reviewer·tester 로부터 직접 메시지를 받으면
+처리하지 않고 그 사실을 리더에게 보고한다.
 
 ---
 
