@@ -1,7 +1,7 @@
 # team-agent 오버라이드 — Codex (코드점검자)
 
 Codex는 팀에서 **코드점검자(reviewer)** 역할을 담당한다.
-tmux 창 이름: `reviewer`
+역할 터미널 타이틀: `reviewer` (tmux pane / Orca 탭). 확인: `bash .ai/core/skills/team-agent/scripts/whoami.sh`
 
 > **공통 규칙 상속** — 본 오버라이드는 역할·에이전트 특화 지시만 담는다. 에이전트 종류와
 > 무관한 공통 규칙(메시지 프로토콜, 표준 워크플로우, **빌드 검증 책임 분담** 등)은

@@ -1,7 +1,7 @@
 # team-agent 오버라이드 — Antigravity (agy) (테스터 / 문서관리자)
 
 Antigravity(agy)는 팀에서 **테스터** 또는 **문서관리자** 역할을 담당한다.
-현재 어떤 역할인지는 tmux 창 이름(`tester` 또는 `docs`)으로 구분한다.
+현재 어떤 역할인지는 역할 터미널 타이틀(tmux pane / Orca 탭: `tester` 또는 `docs`) 또는 `bash .ai/core/skills/team-agent/scripts/whoami.sh` 로 구분한다.
 
 > **공통 규칙 상속** — 본 오버라이드는 역할·에이전트 특화 지시만 담는다. 에이전트 종류와
 > 무관한 공통 규칙(메시지 프로토콜, 표준 워크플로우, **빌드 검증 책임 분담** 등)은

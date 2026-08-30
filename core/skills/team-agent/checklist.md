@@ -2,10 +2,11 @@
 
 ## Phase 0 — 환경 초기화
 
-- [ ] tmux 세션 `team-agent` 생성 (`setup.sh` 실행)
-- [ ] 4개 창 확인: `leader`, `developer`, `reviewer`, `tester`
-- [ ] `.team/` 디렉토리 구조 확인
-- [ ] 각 창에서 에이전트 CLI 기동 확인
+- [ ] 터미널 백엔드 결정 (tmux / Orca — `TEAM_AGENT_BACKEND` 또는 자동 감지)
+- [ ] `setup.sh` 실행 → `.team/status/backend` 에 백엔드 기록 확인
+- [ ] 역할 터미널 4개 확인: `leader`, `developer`, `reviewer`, `tester` (tmux pane 타이틀 / Orca 탭 타이틀)
+- [ ] `.team/` 디렉토리 구조 및 `.team/status/role-map.sh` 확인
+- [ ] 각 터미널에서 에이전트 CLI 기동 확인, `whoami.sh` 로 역할 판별 확인
 
 ## Phase 1 — 요구사항 정의 (leader)
 

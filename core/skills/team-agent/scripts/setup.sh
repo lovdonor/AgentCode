@@ -1,98 +1,47 @@
 #!/usr/bin/env bash
-# setup.sh — team-agent tmux 세션 및 메시지 디렉토리 초기화
+# setup.sh — team-agent 역할 터미널(tmux pane 또는 Orca 터미널) 및 메시지 디렉토리 초기화
 # 사용법: bash .ai/core/skills/team-agent/scripts/setup.sh [프로젝트_루트]
+#
+# 백엔드 선택: TEAM_AGENT_BACKEND=tmux|orca > .team/status/backend > 자동 감지(Orca 안이면 orca, 아니면 tmux)
+# 검증용     : TEAM_AGENT_NO_LAUNCH=1  (터미널만 열고 에이전트 CLI 는 기동하지 않음)
 
 set -euo pipefail
 
 PROJECT_ROOT="${1:-$(pwd)}"
-PROJECT_NAME=$(basename "$PROJECT_ROOT")
-SESSION="team-agent-${PROJECT_NAME}"
-TEAM_DIR="$PROJECT_ROOT/.team"
+PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-ROLES=("leader" "developer" "reviewer" "tester")
-TEAM_WIN="team"
+# shellcheck source=backend/common.sh
+source "$SCRIPT_DIR/backend/common.sh"
 
-# ── 1. tmux 세션 생성 ────────────────────────────────────────────────────────
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-  echo "[setup] 세션 '$SESSION' 이미 존재합니다."
+TEAM_DIR="$(team_dir "$PROJECT_ROOT")"
 
-  # 구버전 멀티-윈도우 구조(leader/developer/… 각자 별도 창) 감지 → 제거
-  OLD_WINS=$(tmux list-windows -t "$SESSION" -F "#{window_name}" \
-    | grep -E "^(leader|developer|reviewer|tester)$" || true)
-  if [ -n "$OLD_WINS" ]; then
-    echo "[setup] 구버전 멀티-윈도우 구조 감지 → 단일 창 pane 레이아웃으로 전환합니다."
-    for WIN in $OLD_WINS; do
-      tmux kill-window -t "$SESSION:$WIN" 2>/dev/null || true
-    done
-  fi
-else
-  echo "[setup] tmux 세션 '$SESSION' 생성 중..."
-  tmux new-session -d -s "$SESSION" -n "$TEAM_WIN" -x 220 -y 50
+# ── 1. 백엔드 결정 ───────────────────────────────────────────────────────────
+team_init_backend "$PROJECT_ROOT" || exit 1
+if ! be_available; then
+  echo "[setup] 백엔드 '$TEAM_BACKEND' 를 사용할 수 없습니다 (tmux 미설치 또는 Orca 런타임 비도달)."
+  echo "[setup] TEAM_AGENT_BACKEND=tmux|orca 로 다른 백엔드를 지정하거나 환경을 확인하세요."
+  exit 1
 fi
+echo "[setup] 터미널 백엔드: $TEAM_BACKEND"
 
-# ── 2. 단일 창 'team' 에 4개 pane 구성 ───────────────────────────────────────
-echo "[setup] 단일 창 '$TEAM_WIN' 에 ${#ROLES[@]}개 pane 구성 중..."
-
-# 'team' 창이 없으면 생성 (세션 첫 창 이름 변경 또는 신규 생성)
-if ! tmux list-windows -t "$SESSION" -F "#{window_name}" | grep -qx "$TEAM_WIN"; then
-  FIRST_WIN=$(tmux list-windows -t "$SESSION" -F "#{window_name}" | head -1)
-  tmux rename-window -t "$SESSION:${FIRST_WIN}" "$TEAM_WIN" 2>/dev/null \
-    || tmux new-window -t "$SESSION" -n "$TEAM_WIN"
-fi
-
-# 필요한 수만큼 pane 추가 (매 split 후 tiled 적용으로 공간 부족 방지)
-CURRENT_PANES=$(tmux list-panes -t "$SESSION:$TEAM_WIN" | wc -l)
-NEEDED=$(( ${#ROLES[@]} - CURRENT_PANES ))
-i=0
-while [ "$i" -lt "$NEEDED" ]; do
-  tmux split-window -t "$SESSION:$TEAM_WIN" -d
-  tmux select-layout -t "$SESSION:$TEAM_WIN" tiled
-  i=$(( i + 1 ))
-done
-
-# 최종 tiled 레이아웃 정렬
-tmux select-layout -t "$SESSION:$TEAM_WIN" tiled
-
-# pane 타이틀 설정 (역할명 표시) 및 pane ID 매핑 저장
-# pane-map.sh 작성 전에 디렉토리를 미리 생성 (순서 의존 버그 방지)
-mkdir -p "$TEAM_DIR/status"
-PANE_MAP_FILE="$TEAM_DIR/status/pane-map.sh"
-echo "# pane-map.sh — role → pane ID 매핑 (setup.sh 자동 생성)" > "$PANE_MAP_FILE"
-
-for idx in "${!ROLES[@]}"; do
-  ROLE="${ROLES[$idx]}"
-  PANE_NUM=$(( idx + 1 ))
-  tmux select-pane -t "$SESSION:$TEAM_WIN.$PANE_NUM" -T "$ROLE" 2>/dev/null || true
-  PANE_ID=$(tmux list-panes -t "$SESSION:$TEAM_WIN" -F "#{pane_index} #{pane_id}" \
-    | awk -v n="$PANE_NUM" '$1==n {print $2}' | head -1)
-  echo "PANE_${ROLE}=\"${PANE_ID}\"" >> "$PANE_MAP_FILE"
-done
-
-echo "[setup] pane 레이아웃 완료: ${ROLES[*]}"
-echo "[setup] pane ID 매핑 저장: $PANE_MAP_FILE"
-
-# ── 3. .team/ 메시지 디렉토리 초기화 ────────────────────────────────────────
+# ── 2. .team/ 메시지 디렉토리 초기화 (백엔드 무관) ──────────────────────────
 echo "[setup] .team/ 디렉토리 초기화 중..."
+mkdir -p "$TEAM_DIR/inbox" "$TEAM_DIR/status" "$TEAM_DIR/shared"
 
-mkdir -p "$TEAM_DIR/inbox"
-mkdir -p "$TEAM_DIR/status"
-mkdir -p "$TEAM_DIR/shared"
-
-# 수신함 파일 초기화 (없는 경우만)
-for ROLE in leader developer reviewer tester; do
+for ROLE in "${TEAM_ROLES[@]}"; do
   INBOX="$TEAM_DIR/inbox/$ROLE.md"
   if [ ! -f "$INBOX" ]; then
-    cat > "$INBOX" << EOF
+    cat > "$INBOX" << EOT
 # $ROLE 수신함
 
-EOF
+EOT
     echo "[setup] 수신함 생성: $INBOX"
   fi
 done
 
-# 상태 파일 초기화
 if [ ! -f "$TEAM_DIR/status/task.md" ]; then
-  cat > "$TEAM_DIR/status/task.md" << 'EOF'
+  cat > "$TEAM_DIR/status/task.md" << 'EOT'
 # 현재 태스크 상태
 
 status: idle
@@ -100,11 +49,11 @@ task: (없음)
 phase: -
 started: -
 updated: -
-EOF
+EOT
 fi
 
 if [ ! -f "$TEAM_DIR/status/progress.md" ]; then
-  cat > "$TEAM_DIR/status/progress.md" << 'EOF'
+  cat > "$TEAM_DIR/status/progress.md" << 'EOT'
 # 역할별 진행 상황
 
 | 역할 | 상태 | 메모 |
@@ -113,10 +62,9 @@ if [ ! -f "$TEAM_DIR/status/progress.md" ]; then
 | developer | idle | |
 | reviewer | idle | |
 | tester | idle | |
-EOF
+EOT
 fi
 
-# 공유 파일 초기화
 for SHARED in requirements.md design.md review-result.md; do
   if [ ! -f "$TEAM_DIR/shared/$SHARED" ]; then
     touch "$TEAM_DIR/shared/$SHARED"
@@ -124,35 +72,20 @@ for SHARED in requirements.md design.md review-result.md; do
   fi
 done
 
-# ── 4. 각 pane에서 프로젝트 루트로 이동 후 에이전트 실행 ────────────────────
-echo "[setup] 각 pane을 프로젝트 루트로 이동 후 에이전트 실행 중..."
+# ── 3. 역할 터미널 열기 + 에이전트 기동 (백엔드 위임) ───────────────────────
+echo "[setup] 역할 터미널 구성 중 (${TEAM_ROLES[*]})..."
+be_open_roles "$PROJECT_ROOT" "${TEAM_ROLES[@]}"
 
-# 역할별 에이전트 CLI 매핑
-declare -A ROLE_AGENT=(
-  [leader]="claude"
-  [developer]="claude"
-  [reviewer]="codex"
-  [tester]="agy"
-)
-
-for idx in "${!ROLES[@]}"; do
-  ROLE="${ROLES[$idx]}"
-  PANE_NUM=$(( idx + 1 ))
-  AGENT="${ROLE_AGENT[$ROLE]}"
-  tmux send-keys -t "$SESSION:$TEAM_WIN.$PANE_NUM" "cd \"$PROJECT_ROOT\" && $AGENT" Enter
-  echo "[setup] pane $PANE_NUM ($ROLE): $AGENT 실행"
-done
-
-# ── 5. 완료 메시지 ───────────────────────────────────────────────────────────
+# ── 4. 완료 메시지 ───────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
 echo " team-agent 환경 준비 완료"
 echo "========================================"
-echo " 세션  : $SESSION"
-echo " 창    : $TEAM_WIN (단일 창, ${#ROLES[@]} pane)"
-echo " 역할  : ${ROLES[*]}"
+echo " 백엔드: $TEAM_BACKEND"
+echo " 프로젝트: $PROJECT_ROOT"
+echo " 역할  : ${TEAM_ROLES[*]}"
 echo " 메시지: $TEAM_DIR"
 echo ""
-echo " 세션 접속: tmux attach -t $SESSION"
-echo " pane 이동: Ctrl+b → 방향키 또는 Ctrl+b q (pane 번호)"
+be_attach_hint "$PROJECT_ROOT"
+echo " 역할 확인: bash .ai/core/skills/team-agent/scripts/whoami.sh"
 echo "========================================"

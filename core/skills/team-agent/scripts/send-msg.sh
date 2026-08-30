@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# send-msg.sh — 특정 에이전트 수신함에 메시지를 기록하고 tmux 창에 알림을 보낸다
+# send-msg.sh — 특정 역할 수신함에 메시지를 기록하고 해당 역할 터미널(tmux pane / Orca 터미널)에 알림을 보낸다
 # 사용법: bash .ai/core/skills/team-agent/scripts/send-msg.sh <수신자> <발신자> "<메시지>" [프로젝트_루트]
 #
 # 예시:
 #   bash .ai/core/skills/team-agent/scripts/send-msg.sh developer leader "auth 모듈 구현 시작"
-#   bash .ai/core/skills/team-agent/scripts/send-msg.sh reviewer developer "구현 완료. 리뷰 요청"
+#   bash .ai/core/skills/team-agent/scripts/send-msg.sh leader developer "구현 완료. 검증 요청"
 
 set -euo pipefail
 
@@ -12,38 +12,29 @@ TO="${1:-}"
 FROM="${2:-}"
 MESSAGE="${3:-}"
 PROJECT_ROOT="${4:-$(pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-PROJECT_NAME=$(basename "$PROJECT_ROOT")
-SESSION="team-agent-${PROJECT_NAME}"
-TEAM_DIR="$PROJECT_ROOT/.team"
-VALID_ROLES=("leader" "developer" "reviewer" "tester")
+# shellcheck source=backend/common.sh
+source "$SCRIPT_DIR/backend/common.sh"
+
+TEAM_DIR="$(team_dir "$PROJECT_ROOT")"
 
 # ── 인자 검증 ────────────────────────────────────────────────────────────────
 if [ -z "$TO" ] || [ -z "$FROM" ] || [ -z "$MESSAGE" ]; then
   echo "사용법: send-msg.sh <수신자> <발신자> \"<메시지>\" [프로젝트_루트]"
-  echo "역할 목록: ${VALID_ROLES[*]}"
+  echo "역할 목록: ${TEAM_ROLES[*]}"
+  exit 1
+fi
+if ! team_is_valid_role "$TO"; then
+  echo "[오류] 알 수 없는 수신자: '$TO'. 유효한 역할: ${TEAM_ROLES[*]}"
+  exit 1
+fi
+if ! team_is_valid_role "$FROM"; then
+  echo "[오류] 알 수 없는 발신자: '$FROM'. 유효한 역할: ${TEAM_ROLES[*]}"
   exit 1
 fi
 
-is_valid_role() {
-  local role="$1"
-  for r in "${VALID_ROLES[@]}"; do
-    [ "$r" = "$role" ] && return 0
-  done
-  return 1
-}
-
-if ! is_valid_role "$TO"; then
-  echo "[오류] 알 수 없는 수신자: '$TO'. 유효한 역할: ${VALID_ROLES[*]}"
-  exit 1
-fi
-
-if ! is_valid_role "$FROM"; then
-  echo "[오류] 알 수 없는 발신자: '$FROM'. 유효한 역할: ${VALID_ROLES[*]}"
-  exit 1
-fi
-
-# ── 수신함 파일에 메시지 추가 ────────────────────────────────────────────────
+# ── 수신함 파일에 메시지 추가 (백엔드 무관) ─────────────────────────────────
 INBOX="$TEAM_DIR/inbox/$TO.md"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M')
 
@@ -52,7 +43,7 @@ if [ ! -f "$INBOX" ]; then
   exit 1
 fi
 
-cat >> "$INBOX" << EOF
+cat >> "$INBOX" << EOT
 
 ---
 from: $FROM
@@ -63,47 +54,23 @@ status: pending
 
 $MESSAGE
 
-EOF
+EOT
 
 echo "[send-msg] $FROM → $TO: 메시지 기록 완료 ($TIMESTAMP)"
 
-# ── tmux pane에 알림 전송 ────────────────────────────────────────────────────
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-  ALERT="[inbox] $FROM 으로부터 새 메시지가 도착했습니다. check-inbox.sh $TO 를 실행하세요."
-
-  # pane-map.sh 로드하여 pane ID 조회 (타이틀 의존 제거)
-  PANE_MAP_FILE="$PROJECT_ROOT/.team/status/pane-map.sh"
-  PANE_ID=""
-  if [ -f "$PANE_MAP_FILE" ]; then
-    # shellcheck source=/dev/null
-    source "$PANE_MAP_FILE"
-    VARNAME="PANE_${TO}"
-    PANE_ID="${!VARNAME:-}"
-  fi
-
-  # pane-map 없거나 ID 없으면 타이틀로 폴백
-  if [ -z "$PANE_ID" ]; then
-    PANE_ID=$(tmux list-panes -t "$SESSION:team" -F "#{pane_id} #{pane_title}" 2>/dev/null \
-      | awk -v role="$TO" '$2==role {print $1}' | head -1)
-  fi
-
-  if [ -n "$PANE_ID" ]; then
-    NOTIFY="[inbox] $FROM 으로부터 새 메시지가 도착했습니다. .team/inbox/$TO.md 를 확인하고 지시에 따라 행동하세요."
-    tmux send-keys -t "$PANE_ID" "$NOTIFY"
-    sleep 1
-    tmux send-keys -t "$PANE_ID" Enter
-    echo "[send-msg] pane '$TO' ($PANE_ID)에 알림 전송 완료"
-  else
-    echo "[send-msg] 경고: pane '$TO' 를 찾을 수 없습니다. (setup.sh를 먼저 실행하세요)"
+# ── 역할 터미널에 알림 전송 (백엔드 위임) ───────────────────────────────────
+NOTIFY="[inbox] $FROM 으로부터 새 메시지가 도착했습니다. .team/inbox/$TO.md 를 확인하고 지시에 따라 행동하세요."
+if team_init_backend "$PROJECT_ROOT" 2>/dev/null && be_available; then
+  if ! be_notify "$PROJECT_ROOT" "$TO" "$NOTIFY"; then
+    echo "[send-msg] 경고: '$TO' 터미널 알림 실패 ($TEAM_BACKEND). 파일에만 기록되었습니다."
   fi
 else
-  echo "[send-msg] 경고: tmux 세션 '$SESSION' 없음. 파일에만 기록되었습니다."
+  echo "[send-msg] 경고: 터미널 백엔드 없음. 파일에만 기록되었습니다."
 fi
 
 # ── status/progress.md 업데이트 ──────────────────────────────────────────────
 PROGRESS="$TEAM_DIR/status/progress.md"
 if [ -f "$PROGRESS" ]; then
-  # $TO 역할의 상태를 pending으로 업데이트 (sed로 해당 행 수정)
   sed -i "s/^| $TO |.*$/| $TO | pending | $FROM 으로부터 메시지 대기 중 |/" "$PROGRESS" 2>/dev/null || true
 fi
 

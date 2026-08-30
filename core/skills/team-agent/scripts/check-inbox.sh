@@ -58,7 +58,9 @@ echo " [$ROLE] 수신함"
 echo "========================================"
 
 # 헤더(# ... 수신함) 이후 실제 메시지 유무 확인
-MSG_COUNT=$(grep -c "^from:" "$INBOX" 2>/dev/null || echo 0)
+# grep -c 는 0건이면 "0"을 출력하고 exit 1 → "|| echo 0" 을 붙이면 "0\n0" 이 되므로 || true 로 받는다
+MSG_COUNT=$(grep -c "^from:" "$INBOX" 2>/dev/null || true)
+MSG_COUNT=${MSG_COUNT:-0}
 
 if [ "$MSG_COUNT" -eq 0 ]; then
   echo " (새 메시지 없음)"

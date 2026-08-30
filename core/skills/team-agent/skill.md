@@ -1,16 +1,24 @@
-# 스킬: team-agent — tmux 멀티 에이전트 팀 개발
+# 스킬: team-agent — 멀티 에이전트 팀 개발 (tmux / Orca)
 
 ## 개요
 
-tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 4개의 pane을 운영하며,
-리더·개발자·코드점검자·테스터가 파일 기반 메시지 버스(`.team/`)를
-통해 협력하여 개발 워크플로우를 완수한다.
+프로젝트당 역할별 터미널 4개(`leader`, `developer`, `reviewer`, `tester`)를 열고,
+리더·개발자·코드점검자·테스터가 파일 기반 메시지 버스(`.team/`)를 통해 협력하여 개발 워크플로우를 완수한다.
+
+역할 터미널을 여는 **터미널 백엔드**는 두 가지이며, 협업 프로토콜(메시지·역할·워크플로우)은 백엔드와 무관하게 동일하다:
+
+| 백엔드 | 역할 터미널 | 역할 식별 | 알림 전달 |
+|---|---|---|---|
+| `tmux` | 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 에 pane 4개 (tiled) | pane 타이틀 = 역할명 | `tmux send-keys` |
+| `orca` | Orca 워크트리에 터미널 탭 4개 | 탭 타이틀 = 역할명, `ORCA_TERMINAL_HANDLE` | `orca terminal send` |
+
+역할 → 터미널 매핑은 `.team/status/role-map.sh`(`TARGET_<역할>=<pane ID | term 핸들>`)에, 선택된 백엔드는 `.team/status/backend` 에 기록된다.
 
 ---
 
 ## 팀 구성
 
-| 역할 | pane (타이틀) | 에이전트 | 책임 |
+| 역할 | 터미널 타이틀 | 에이전트 | 책임 |
 |------|-------------|---------|------|
 | 리더 | `leader` | Claude Code | 요구사항 분석, 작업 분배, 최종 검토 |
 | 개발자 | `developer` | Claude Code | 구현, 코드 작성 |
@@ -21,23 +29,59 @@ tmux 세션 `team-agent-<프로젝트명>` 의 단일 창 `team` 위에서 4개�
 
 ## 사전 요구사항
 
-- tmux 설치
+- 터미널 백엔드 중 하나: **tmux** 설치 또는 **Orca** 앱 실행 중(`orca status` 의 `runtimeReachable: true`) + 프로젝트가 Orca 에 등록됨(`orca repo add <경로>`)
 - 각 에이전트 CLI 사용 가능 (`claude`, `codex`, `agy`)
 - 프로젝트 루트에서 스크립트 실행
+
+---
+
+## 터미널 백엔드 선택
+
+`setup.sh` 가 아래 순서로 백엔드를 정하고 `.team/status/backend` 에 기록한다. 이후 `send-msg.sh`/`status.sh`/`whoami.sh` 는 기록된 백엔드를 그대로 쓴다.
+
+1. 환경변수 `TEAM_AGENT_BACKEND=tmux|orca` (명시)
+2. `.team/status/backend` (이미 구성된 팀)
+3. 자동 감지 — 현재 셸이 Orca 터미널(`ORCA_TERMINAL_HANDLE` 존재)이고 Orca 런타임이 살아 있으면 `orca`, 아니면 `tmux`
+
+```bash
+# 자동 감지
+bash .ai/core/skills/team-agent/scripts/setup.sh
+
+# 명시
+TEAM_AGENT_BACKEND=orca bash .ai/core/skills/team-agent/scripts/setup.sh
+TEAM_AGENT_BACKEND=tmux bash .ai/core/skills/team-agent/scripts/setup.sh
+
+# 검증용: 터미널만 열고 에이전트 CLI 는 기동하지 않음
+TEAM_AGENT_NO_LAUNCH=1 bash .ai/core/skills/team-agent/scripts/setup.sh
+```
+
+백엔드 구현은 `scripts/backend/{common,tmux,orca}.sh` 에 있다. 새 백엔드를 추가하려면 `backend/<name>.sh` 에
+`be_name / be_available / be_open_roles / be_notify / be_status / be_self_role / be_attach_hint` 7개 함수를 구현하고 `common.sh` 의 `TEAM_BACKENDS` 에 등록한다.
 
 ---
 
 ## 초기 설정
 
 ```bash
-# tmux 세션 및 창 초기화
+# 역할 터미널 + .team/ 초기화 (백엔드 자동 감지)
 bash .ai/core/skills/team-agent/scripts/setup.sh
 ```
 
 실행 결과:
-- tmux 세션 `team-agent-<프로젝트명>` 생성 (예: `team-agent-Monsoon`)
-- 단일 창 `team` 에 4개 pane 생성 (tiled 레이아웃): `leader`, `developer`, `reviewer`, `tester`
+- 역할 터미널 4개 생성: `leader`, `developer`, `reviewer`, `tester` (tmux: 세션 `team-agent-<프로젝트명>` 창 `team` 의 pane / orca: 워크트리의 터미널 탭)
+- 각 터미널에서 역할별 에이전트 CLI 기동 (`claude` / `claude` / `codex` / `agy`)
 - `.team/inbox/`, `.team/status/`, `.team/shared/` 디렉토리 초기화
+- `.team/status/role-map.sh`, `.team/status/backend` 기록
+
+이미 구성된 팀에서 다시 실행하면 살아있는 역할 터미널은 재사용한다(tmux: 세션/pane 유지, orca: 핸들이 live 면 재사용).
+
+### 내 역할 확인
+
+```bash
+bash .ai/core/skills/team-agent/scripts/whoami.sh   # → leader | developer | reviewer | tester
+```
+
+에이전트는 작업 시작 전에 이 명령으로 자기 역할을 확인한다(tmux: pane ID, orca: `ORCA_TERMINAL_HANDLE` 을 role-map 과 대조). 판별이 안 되면 터미널 타이틀을 확인한다.
 
 ---
 
@@ -52,7 +96,9 @@ bash .ai/core/skills/team-agent/scripts/setup.sh
 │   └── tester.md      ← 테스터 수신함
 ├── status/
 │   ├── task.md        ← 현재 태스크 및 단계
-│   └── progress.md    ← 역할별 진행 상황
+│   ├── progress.md    ← 역할별 진행 상황
+│   ├── backend        ← 선택된 터미널 백엔드 (tmux | orca)
+│   └── role-map.sh    ← 역할 → 터미널 타깃 (setup.sh 자동 생성)
 └── shared/
     ├── requirements.md  ← 리더 작성 요구사항
     ├── design.md        ← 설계 결정 사항

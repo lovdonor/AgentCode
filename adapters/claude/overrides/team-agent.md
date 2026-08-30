@@ -1,20 +1,21 @@
 # team-agent 오버라이드 — Claude Code (리더 / 개발자)
 
 Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
-현재 어떤 역할인지는 tmux 창 `team` 의 pane 타이틀(`leader` 또는 `developer`)으로 구분한다.
+현재 어떤 역할인지는 `bash .ai/core/skills/team-agent/scripts/whoami.sh` 로 확인한다 (tmux: pane 타이틀 / Orca: 탭 타이틀이 `leader` 또는 `developer`).
 
 ---
 
 ## 세션 격리 규칙 (필수)
 
-- **세션명 규칙:** `team-agent-<프로젝트명>` — 프로젝트명은 `basename $(pwd)` 기준 (예: `team-agent-AeroTrade`)
-- **신규 세션 전용:** 기존 tmux 세션(`tmux list-sessions`)은 절대 건드리지 않는다. 다른 프로젝트 세션에 pane을 추가하거나 명령을 전송하면 안 된다.
-- **항상 `setup.sh` 사용:** 수동 `tmux split-window` 대신 반드시 아래 스크립트로 실행한다.
+- **백엔드 고정:** 팀의 터미널 백엔드는 `.team/status/backend`(tmux | orca) 에 기록된 것을 쓴다. 중간에 바꾸지 않는다.
+- **세션명 규칙(tmux):** `team-agent-<프로젝트명>` — 프로젝트명은 `basename $(pwd)` 기준 (예: `team-agent-AeroTrade`)
+- **신규 세션 전용:** 기존 tmux 세션(`tmux list-sessions`)이나 다른 워크트리의 Orca 터미널은 절대 건드리지 않는다. 다른 프로젝트 세션에 pane/터미널을 추가하거나 명령을 전송하면 안 된다.
+- **항상 `setup.sh` 사용:** 수동 `tmux split-window` / `orca terminal create` 대신 반드시 아래 스크립트로 실행한다.
   ```bash
   bash .ai/core/skills/team-agent/scripts/setup.sh
   ```
   스크립트가 세션 존재 여부를 자동 감지하고 중복 생성을 방지한다.
-- **`$TMUX_PANE` 의존 금지:** Bash 서브셸에서는 `$TMUX_PANE` 이 비어 있을 수 있으므로, 직접 `$TMUX_PANE` 을 LEADER로 사용하는 방식은 사용하지 않는다.
+- **`$TMUX_PANE` / `$ORCA_TERMINAL_HANDLE` 직접 의존 금지:** Bash 서브셸에서는 `$TMUX_PANE` 이 비어 있을 수 있다. 역할 판별은 `whoami.sh`, 상대 역할 터미널 지정은 `send-msg.sh`(role-map 경유)로만 한다.
 
 ---
 
@@ -28,6 +29,7 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
 | `send-msg.sh`     | `.ai/core/skills/team-agent/scripts/send-msg.sh` |
 | `check-inbox.sh`  | `.ai/core/skills/team-agent/scripts/check-inbox.sh` |
 | `status.sh`       | `.ai/core/skills/team-agent/scripts/status.sh` |
+| `whoami.sh`       | `.ai/core/skills/team-agent/scripts/whoami.sh` |
 
 호출 시 반드시 `bash .ai/core/skills/team-agent/scripts/<script>` 형식의 **전체 경로**를 사용한다.
 아래 예시도 모두 이 규칙을 따른다.
@@ -42,7 +44,7 @@ Claude Code는 팀에서 **리더** 또는 **개발자** 역할을 담당한다.
   ```bash
   bash .ai/core/skills/team-agent/scripts/send-msg.sh <수신자> <발신자> "<메시지>"
   ```
-- `.team/inbox/*.md` 파일에 직접 기록하거나 tmux 에만 말로 띄우는 것은 **금지**한다 (수신자 인지·알림 및 progress 갱신이 누락된다).
+- `.team/inbox/*.md` 파일에 직접 기록하거나 터미널(tmux/Orca)에만 말로 띄우는 것은 **금지**한다 (수신자 인지·알림 및 progress 갱신이 누락된다).
 - 메시지 본문에는 **제목 · 근거 문서 경로 · 완료 기준 · 상대가 취할 다음 행동**을 포함한다.
 - 수신자는 `check-inbox.sh <role>` 로 확인한 뒤에만 행동한다.
 

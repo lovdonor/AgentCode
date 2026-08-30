@@ -5,7 +5,7 @@
 > 최신 오버라이드: `.ai/adapters/agy/overrides/team-agent.md`
 
 ~~Gemini~~Antigravity(agy)는 팀에서 **테스터** 또는 **문서관리자** 역할을 담당한다.
-현재 어떤 역할인지는 tmux 창 이름(`tester` 또는 `docs`)으로 구분한다.
+현재 어떤 역할인지는 역할 터미널 타이틀(tmux pane / Orca 탭: `tester` 또는 `docs`)로 구분한다.
 
 ---
 
