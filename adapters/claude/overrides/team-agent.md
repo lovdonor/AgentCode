@@ -96,7 +96,7 @@ core `skill.md` 의 **「역할 간 소통 경로 (단일 통로 원칙)」** �
 5. **tester 의 버그 리포트 수신 시**:
    - `.team/shared/test-result.md` 를 읽고 재현 경로 · 영향 범위를 확인한다.
    - developer 에게 수정 지시를 내린 뒤, 수정 완료 보고 수신 시 tester 에게 재테스트 요청을 전달한다.
-6. 최종 보고 전 checklist.md 의 Phase 6을 모두 확인한다.
+6. 최종 보고 전 checklist.md 의 Phase 5를 모두 확인한다.
 
 ### Claude Code 특화 지시
 - TodoWrite 도구로 현재 태스크 진행 상황을 추적한다.
